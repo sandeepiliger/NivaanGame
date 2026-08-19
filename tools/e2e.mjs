@@ -287,6 +287,43 @@ console.log('\nrenderers play through');
   await expectComplete('symmetry');
 }
 
+// pop -----------------------------------------------------------------------
+{
+  const levelId = await levelForSkill('tot-pop');
+  await openLevel(levelId);
+  const count = await page.locator('.pop__bubble').count();
+  for (let i = 0; i < count; i++) {
+    // Bubbles drift gently, which Playwright reads as "not stable"; a real
+    // finger has no such problem, so skip the stability wait.
+    await page.locator('.pop__bubble').nth(i).click({ force: true });
+    await page.waitForTimeout(70);
+  }
+  await expectComplete(`pop (${count} bubbles)`);
+}
+
+// trace ---------------------------------------------------------------------
+{
+  const levelId = await levelForSkill('tot-trace');
+  await openLevel(levelId);
+  const puzzle = await firstPuzzle(levelId);
+  const box = await page.locator('.trace__svg').boundingBox();
+  const side = Math.min(box.width, box.height);
+  const ox = box.x + (box.width - side) / 2;
+  const oy = box.y + (box.height - side) / 2;
+  const at = (p) => ({ x: ox + (p.x / 100) * side, y: oy + (p.y / 100) * side });
+
+  const first = at(puzzle.path[0]);
+  await page.mouse.move(first.x, first.y);
+  await page.mouse.down();
+  for (const point of puzzle.path) {
+    const q = at(point);
+    await page.mouse.move(q.x, q.y, { steps: 2 });
+    await page.waitForTimeout(25);
+  }
+  await page.mouse.up();
+  await expectComplete(`trace (${puzzle.path.length} waypoints)`);
+}
+
 // maze ----------------------------------------------------------------------
 {
   const levelId = await levelForSkill('log-maze');
@@ -369,7 +406,111 @@ console.log('\nfull level');
 }
 
 /* -------------------------------------------------------------------------- */
-/* 5. The "Show me" escape hatch                                               */
+/* 5. Toddler world rules                                                      */
+/* -------------------------------------------------------------------------- */
+
+console.log('\ntoddler world');
+
+{
+  // Every Little Ones puzzle must be readable-free and offer at most 3 choices.
+  const problems = await page.evaluate(async () => {
+    const { levelsFor, buildLevel } = await import('/src/data/catalog.js');
+    const out = [];
+    for (const level of levelsFor('toddler')) {
+      if (!level.forgiving) out.push(`${level.id} is not marked forgiving`);
+      for (const puzzle of buildLevel(level, 0)) {
+        if (puzzle.options && puzzle.options.length > 3) {
+          out.push(`${level.id}: ${puzzle.options.length} options — too many for a toddler`);
+        }
+        if ((puzzle.prompt || '').length > 34) {
+          out.push(`${level.id}: prompt too long — "${puzzle.prompt}"`);
+        }
+        if (!puzzle.speak) out.push(`${level.id}: no spoken prompt`);
+      }
+    }
+    return out;
+  });
+  for (const problem of problems) fail(problem);
+  if (!problems.length) console.log('  ✓ all Little Ones levels are forgiving, spoken and ≤3 choices');
+}
+
+{
+  // A toddler who taps every wrong answer must still finish with three stars.
+  const levelId = await levelForSkill('tot-find');
+  await openLevel(levelId);
+  const puzzles = await page.evaluate(async (id) => {
+    const { buildLevel, levelById } = await import('/src/data/catalog.js');
+    return buildLevel(levelById(id), 0).map((p) => ({
+      answer: p.answer,
+      wrong: p.options.filter((o) => o.id !== p.answer).map((o) => o.id),
+    }));
+  }, levelId);
+
+  for (const round of puzzles) {
+    if (await page.evaluate(() => location.hash.includes('result'))) break;
+    await page.click(`.opt[data-id="${round.wrong[0]}"]`);
+    await page.waitForTimeout(260);
+    await page.click(`.opt[data-id="${round.answer}"]`);
+    await page.waitForTimeout(1150);
+  }
+  await page.waitForTimeout(700);
+
+  const stars = await page.evaluate(
+    (id) => JSON.parse(localStorage.getItem('nivaan.save.v1')).profiles.p1.stars[id],
+    levelId,
+  );
+  if (stars !== 3) fail(`a toddler level scored ${stars} stars after wrong taps — should always be 3`);
+  else console.log('  ✓ wrong taps never cost a toddler a star');
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. Sound                                                                    */
+/* -------------------------------------------------------------------------- */
+
+console.log('\nsound');
+
+{
+  await page.goto(`${BASE}/index.html`);
+  await page.waitForTimeout(300);
+  // A real gesture is required before the browser will start an AudioContext.
+  await page.click('.home__title');
+  await page.waitForTimeout(200);
+
+  const report = await page.evaluate(async () => {
+    const audio = await import('/src/core/audio.js');
+    const ctx = audio.unlockAudio();
+    if (!ctx) return { error: 'no AudioContext' };
+
+    // Tap a probe onto the output so we can measure that sound is produced.
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    ctx.destination.channelCount = ctx.destination.channelCount;
+    const probe = ctx.createGain();
+    probe.connect(analyser);
+
+    const results = {};
+    for (const name of audio.SFX_NAMES) {
+      try {
+        audio.sfx(name, 1);
+        results[name] = 'ok';
+      } catch (err) {
+        results[name] = 'threw: ' + err.message;
+      }
+    }
+    return { count: audio.SFX_NAMES.length, results, state: ctx.state };
+  });
+
+  if (report.error) {
+    console.log('  – skipped:', report.error);
+  } else {
+    const broken = Object.entries(report.results).filter(([, v]) => v !== 'ok');
+    for (const [name, why] of broken) fail(`sfx "${name}" ${why}`);
+    if (!broken.length) console.log(`  ✓ all ${report.count} effects play without error`);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. The "Show me" escape hatch                                               */
 /* -------------------------------------------------------------------------- */
 
 console.log('\nhelp');

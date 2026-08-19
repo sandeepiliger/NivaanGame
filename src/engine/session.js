@@ -17,6 +17,8 @@ import { renderSudoku } from './renderers/sudoku.js';
 import { renderSymmetry } from './renderers/symmetry.js';
 import { renderTapCount } from './renderers/tapcount.js';
 import { renderConnect } from './renderers/connect.js';
+import { renderPop } from './renderers/pop.js';
+import { renderTrace } from './renderers/trace.js';
 
 export const RENDERERS = {
   choice: renderChoice,
@@ -30,6 +32,8 @@ export const RENDERERS = {
   symmetry: renderSymmetry,
   tapcount: renderTapCount,
   connect: renderConnect,
+  pop: renderPop,
+  trace: renderTrace,
 };
 
 /** Mistakes allowed per round before the star rating drops a level. */
@@ -38,7 +42,7 @@ const STAR_THRESHOLDS = {
   two: 0.34, // up to a third of rounds had a slip
 };
 
-export function createSession({ puzzles, levelId, seed }) {
+export function createSession({ puzzles, levelId, seed, forgiving = false }) {
   const state = {
     levelId,
     puzzles,
@@ -93,6 +97,9 @@ export function createSession({ puzzles, levelId, seed }) {
 
     /** 1–3 stars. Hints cap the score at two; a revealed answer caps it at one. */
     stars() {
+      // Toddler levels always award full marks: at two and three years old a
+      // wrong tap is exploration, and losing a star for it teaches nothing.
+      if (forgiving) return 3;
       const roundsWithMistakes = state.rounds.filter((r) => r.wrong > 0).length;
       const ratio = roundsWithMistakes / Math.max(1, state.puzzles.length);
       if (state.revealed > 0) return 1;

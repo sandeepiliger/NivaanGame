@@ -57,6 +57,7 @@ export function rewardsScreen() {
       h('h2.rewards__head', 'Certificates'),
       h(
         'div.rewards__certs',
+        { 'data-quiet': '' },
         certs.map((c) =>
           h(
             'button.cert' + (c.earned ? '.cert--on' : ''),
@@ -64,7 +65,7 @@ export function rewardsScreen() {
               type: 'button',
               style: { '--c': c.category.color, '--e': c.category.edge },
               onclick: () => {
-                sfx(c.earned ? 'unlock' : 'wrong');
+                sfx(c.earned ? 'unlock' : 'oops');
                 if (c.earned) openCertificate(c, profile());
               },
             },

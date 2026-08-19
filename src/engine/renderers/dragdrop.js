@@ -101,7 +101,7 @@ export function renderDragDrop(puzzle, api) {
       return;
     }
     setSelected(id);
-    sfx('tap');
+    sfx('pickup');
   }
 
   function tapTarget(targetId) {
@@ -147,7 +147,7 @@ export function renderDragDrop(puzzle, api) {
     targetNode.classList.add('dd__target--filled');
     pulse(targetNode, 1.06);
     sparkle(targetNode, '✨', 5);
-    sfx('pop');
+    sfx('snap');
     haptic(12);
     solvedCount += 1;
     api.partial?.(solvedCount / required);

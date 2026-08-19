@@ -3,7 +3,7 @@
  * network at all. Bump CACHE when shipping new files.
  */
 
-const CACHE = 'nivaan-v1';
+const CACHE = 'nivaan-v2';
 
 const SHELL = [
   './',
@@ -38,7 +38,10 @@ const SHELL = [
   './src/engine/renderers/symmetry.js',
   './src/engine/renderers/tapcount.js',
   './src/engine/renderers/connect.js',
+  './src/engine/renderers/pop.js',
+  './src/engine/renderers/trace.js',
   './src/games/util.js',
+  './src/games/toddler.js',
   './src/games/numbers.js',
   './src/games/letters.js',
   './src/games/colors.js',

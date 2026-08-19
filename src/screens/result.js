@@ -106,9 +106,12 @@ export function resultScreen(params) {
       for (let i = 0; i < stars; i++) {
         await wait(320);
         starNodes[i].classList.add('result__star--in');
-        sfx('star');
+        sfx('star', i);
       }
-      if (stars === 3) confetti({ count: 90 });
+      if (stars === 3) {
+        confetti({ count: 90 });
+        sfx('applause');
+      }
       await wait(400);
       celebrateNewRewards();
     },

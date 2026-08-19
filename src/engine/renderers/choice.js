@@ -63,7 +63,7 @@ export function renderChoice(puzzle, api) {
       haptic(14);
 
       if (multi && found.size < answers.size) {
-        sfx('pop');
+        sfx('count', found.size - 1);
         api.partial?.(found.size / answers.size);
         return;
       }

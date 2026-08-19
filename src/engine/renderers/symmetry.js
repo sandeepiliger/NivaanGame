@@ -105,7 +105,7 @@ export function renderSymmetry(puzzle, api) {
     cellNodes[i].style.background = palette[value - 1];
     cellNodes[i].classList.add('sym__cell--on');
     pulse(cellNodes[i], 1.15);
-    sfx('pop');
+    sfx('snap');
     haptic(10);
     api.partial?.(done / needed);
 

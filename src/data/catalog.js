@@ -1,12 +1,14 @@
 /**
  * The level catalog.
  *
- * Categories own a list of skills; every skill is played at five difficulty
- * tiers. Levels interleave the skills tier by tier, so a child meets each game
- * type at an easy level before any of them gets harder — the same "spiral"
- * curriculum used by the app this is modelled on.
+ * Categories own a list of skills; every skill is played across that
+ * category's difficulty tiers (five for the main worlds, three for the
+ * toddler one). Levels interleave the skills tier by tier, so a child meets
+ * each game type at an easy level before any of them gets harder — the same
+ * "spiral" curriculum used by the app this is modelled on.
  */
 
+import { TODDLER_SKILLS } from '../games/toddler.js';
 import { NUMBER_SKILLS } from '../games/numbers.js';
 import { LETTER_SKILLS } from '../games/letters.js';
 import { COLOR_SKILLS } from '../games/colors.js';
@@ -19,7 +21,29 @@ export const TIERS = 5;
 /** Rounds per level, by tier, when a skill does not override it. */
 const DEFAULT_ROUNDS = [5, 5, 6, 6, 7];
 
+/** Toddlers get shorter levels — attention spans are measured in minutes. */
+const TODDLER_ROUNDS = [3, 4, 4];
+
 export const CATEGORIES = [
+  {
+    id: 'toddler',
+    name: 'Little Ones',
+    tagline: 'First games for toddlers',
+    emoji: '🧸',
+    color: '#ff8a3d',
+    edge: '#e06716',
+    ink: '#40210a',
+    ages: '2–4',
+    /**
+     * Three tiers, not five: at this age harder means "one more option", and
+     * `forgiving` means a wrong tap never costs a star — a two-year-old is
+     * exploring, not being assessed.
+     */
+    tiers: 3,
+    forgiving: true,
+    rounds: TODDLER_ROUNDS,
+    skills: TODDLER_SKILLS,
+  },
   {
     id: 'numbers',
     name: 'Numbers',
@@ -81,7 +105,9 @@ export const categoryById = (id) => CATEGORIES.find((c) => c.id === id);
 
 /** Every skill across every category, keyed by id. */
 export const SKILL_INDEX = new Map(
-  CATEGORIES.flatMap((c) => c.skills.map((s) => [s.id, { ...s, categoryId: c.id }])),
+  CATEGORIES.flatMap((c) =>
+    c.skills.map((s) => [s.id, { ...s, categoryId: c.id, maxTier: c.tiers ?? TIERS }]),
+  ),
 );
 
 export const skillById = (id) => SKILL_INDEX.get(id);
@@ -104,7 +130,10 @@ export function levelsFor(categoryId) {
   if (!category) return [];
 
   const levels = [];
-  for (let tier = 1; tier <= TIERS; tier++) {
+  const tierCount = category.tiers ?? TIERS;
+  const roundsByTier = category.rounds ?? DEFAULT_ROUNDS;
+
+  for (let tier = 1; tier <= tierCount; tier++) {
     category.skills.forEach((skill, skillIndex) => {
       const index = levels.length;
       levels.push({
@@ -117,7 +146,8 @@ export function levelsFor(categoryId) {
         emoji: skill.emoji,
         blurb: skill.blurb,
         tier,
-        rounds: skill.rounds ?? DEFAULT_ROUNDS[tier - 1],
+        forgiving: Boolean(category.forgiving),
+        rounds: skill.rounds ?? roundsByTier[tier - 1] ?? roundsByTier[roundsByTier.length - 1],
         // Every fifth level is a "star challenge": same content, no hints shown
         // by default and a bonus reward for a clean run.
         challenge: (index + 1) % 10 === 0,
@@ -186,12 +216,15 @@ export function buildPuzzle(skill, tier, seed) {
  */
 export function buildDailyChallenge(dateKey, count = 8) {
   const rng = makeRng('daily|' + dateKey);
-  const skills = Array.from(SKILL_INDEX.values());
+  // The daily mix is for readers and near-readers; the toddler world has its
+  // own pace and does not belong in a timed-feeling challenge.
+  const skills = Array.from(SKILL_INDEX.values()).filter((s) => s.categoryId !== 'toddler');
   const puzzles = [];
   for (let i = 0; i < count; i++) {
     const skill = rng.pick(skills);
-    const tier = rng.int(1, 3) + Math.floor(i / 3);
-    puzzles.push(buildPuzzle(skill, Math.min(TIERS, tier), `daily|${dateKey}|${i}`));
+    // Ramp up through the set, but never past what that skill actually has.
+    const tier = Math.min(skill.maxTier, rng.int(1, 3) + Math.floor(i / 3));
+    puzzles.push(buildPuzzle(skill, tier, `daily|${dateKey}|${i}`));
   }
   return puzzles;
 }

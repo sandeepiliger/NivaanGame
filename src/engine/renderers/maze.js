@@ -169,7 +169,7 @@ export function renderMaze(puzzle, api) {
         moveTo._warned = true;
         setTimeout(() => (moveTo._warned = false), 500);
         shake(wrap);
-        sfx('wrong');
+        sfx('bump');
       }
       return;
     }
@@ -180,13 +180,13 @@ export function renderMaze(puzzle, api) {
 
     current = next;
     haptic(6);
-    sfx('tick');
+    sfx('step');
 
     if (needed.has(current) && !collected.has(current)) {
       collected.add(current);
       const node = itemNodes.get(current);
       node?.classList.add('maze__item--got');
-      sfx('pop');
+      sfx('coin');
       api.partial?.(collected.size / (needed.size + 1));
     }
 

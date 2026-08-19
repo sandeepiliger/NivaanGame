@@ -56,7 +56,7 @@ export function renderOrder(puzzle, api) {
         h('span.ord__placed', renderVisual(item.visual, { size: 'sm' })),
       );
       pulse(slot);
-      sfx('pop');
+      sfx('count', step);
       haptic(12);
       step += 1;
       api.partial?.(step / answer.length);

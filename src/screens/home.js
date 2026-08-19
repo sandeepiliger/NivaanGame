@@ -25,7 +25,6 @@ export function homeScreen() {
       {
         href: href('map', { cat: category.id }),
         style: { '--c': category.color, '--e': category.edge, '--ink': category.ink },
-        onclick: () => sfx('tap'),
       },
       h('span.catcard__emoji', category.emoji),
       h(
@@ -94,12 +93,12 @@ export function homeScreen() {
         'div.home__footer',
         h(
           'a.home__link',
-          { href: href('rewards'), onclick: () => sfx('tap') },
+          { href: href('rewards') },
           '🏆 My rewards',
         ),
         h(
           'a.home__link',
-          { href: href('progress'), onclick: () => sfx('tap') },
+          { href: href('progress') },
           '📊 My progress',
         ),
       ),
@@ -140,7 +139,7 @@ function soundToggle() {
     setSetting('sound', !settings().sound);
     paint();
     syncMusic();
-    if (settings().sound) sfx('pop');
+    if (settings().sound) sfx('toggleOn');
   });
   paint();
   return btn;

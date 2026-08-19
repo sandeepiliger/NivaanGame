@@ -53,7 +53,7 @@ export function renderMemory(puzzle, api) {
       return;
 
     node.classList.add('mem__card--up');
-    sfx('tap');
+    sfx('flip');
     haptic(8);
 
     if (!first) {
@@ -70,7 +70,7 @@ export function renderMemory(puzzle, api) {
           c.node.classList.add('mem__card--gone');
           sparkle(c.node, '⭐', 5);
         });
-        sfx('correct');
+        sfx('match');
         first = null;
         busy = false;
         api.partial?.(matched / total);
@@ -79,7 +79,7 @@ export function renderMemory(puzzle, api) {
     } else {
       busy = true;
       shake(node);
-      sfx('wrong');
+      sfx('oops');
       api.wrong({ from: node });
       const a = first;
       first = null;

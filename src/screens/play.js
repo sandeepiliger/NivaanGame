@@ -15,7 +15,7 @@ import {
   playClockMinutes,
   resetPlayClock,
 } from '../core/store.js';
-import { PRAISE, NUDGE } from '../data/content.js';
+import { PRAISE, NUDGE, TODDLER_PRAISE } from '../data/content.js';
 import { showBreakReminder } from './dialogs.js';
 
 /** Wrong answers on one round before we offer to show the answer. */
@@ -33,10 +33,14 @@ export function playScreen(params) {
   const variant = Number(params.v || 0);
   const puzzles = isDaily ? buildDailyChallenge(todayKey()) : buildLevel(level, variant);
 
+  /** Toddler levels never punish a wrong tap — see the Little Ones world. */
+  const forgiving = Boolean(level?.forgiving);
+
   const session = createSession({
     puzzles,
     levelId: isDaily ? `daily-${todayKey()}` : level.id,
     seed: (isDaily ? 'daily' : level.id) + '|' + variant,
+    forgiving,
   });
 
   const theme = category?.color || '#6c4ce0';
@@ -47,7 +51,8 @@ export function playScreen(params) {
   const pips = h('div.play__pips');
   const barFill = h('div.bar__fill');
   const promptEl = h('div.play__prompt');
-  const bodyHost = h('div.play__host.grow');
+  // Renderers make their own, more specific sounds.
+  const bodyHost = h('div.play__host.grow', { 'data-quiet': '' });
   const hintBtn = h(
     'button.iconbtn.play__hint',
     { type: 'button', 'aria-label': 'Hint', onclick: useHint },
@@ -74,6 +79,8 @@ export function playScreen(params) {
 
   let active = null;
   let advancing = false;
+  /** Consecutive clean rounds — the praise flourish climbs with it. */
+  let streak = 0;
 
   /* --- rounds ----------------------------------------------------------- */
 
@@ -137,11 +144,17 @@ export function playScreen(params) {
     advancing = true;
     session.recordCorrect();
 
-    sfx('correct');
+    const clean = session.state.rounds[session.state.index].wrong === 0;
+    streak = clean ? streak + 1 : 0;
+
+    sfx('correct', streak - 1);
+    if (streak >= 3) sfx('sparkle');
     haptic([12, 30, 12]);
-    const praise = PRAISE[Math.floor(session.rng.next() * PRAISE.length)];
-    if (from) floatText('⭐', from, '#ffcc29');
-    confetti({ from: from || bodyHost, count: 26 });
+
+    const lines = forgiving ? TODDLER_PRAISE : PRAISE;
+    const praise = lines[Math.floor(session.rng.next() * lines.length)];
+    if (from) floatText(streak >= 3 ? `${streak}× ⭐` : '⭐', from, '#ffcc29');
+    confetti({ from: from || bodyHost, count: streak >= 3 ? 40 : 26 });
     showFlash(praise, 'good');
     speak(praise);
 
@@ -151,12 +164,17 @@ export function playScreen(params) {
 
   function onWrong() {
     session.recordWrong();
+    streak = 0;
     const round = session.state.rounds[session.state.index];
-    const nudge = NUDGE[Math.floor(session.rng.next() * NUDGE.length)];
-    showFlash(nudge, 'bad');
+    const nudge = forgiving
+      ? 'Try another one!'
+      : NUDGE[Math.floor(session.rng.next() * NUDGE.length)];
+    showFlash(nudge, forgiving ? 'soft' : 'bad');
 
-    if (round.wrong === 2) hintBtn.classList.add('play__hint--urgent');
-    if (round.wrong >= REVEAL_AFTER && !round.revealed) offerReveal();
+    // Toddlers get help sooner, and a nudge rather than a "wrong" banner.
+    const revealAfter = forgiving ? 2 : REVEAL_AFTER;
+    if (round.wrong >= revealAfter - 1) hintBtn.classList.add('play__hint--urgent');
+    if (round.wrong >= revealAfter && !round.revealed) offerReveal();
   }
 
   function nextRound() {

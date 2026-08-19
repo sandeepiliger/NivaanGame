@@ -61,14 +61,14 @@ export function renderTapCount(puzzle, api) {
       node.classList.add('tap__item--got');
       pulse(node, 1.3);
       floatText('+1', node, '#3ecf6d');
-      sfx('pop');
+      sfx('count', found.size - 1);
       haptic(12);
       counterEl.querySelector('.tap__count').textContent = `${found.size} / ${targets.size}`;
       api.partial?.(found.size / targets.size);
       if (found.size >= targets.size) api.correct({ from: sceneEl });
     } else {
       shake(node);
-      sfx('wrong');
+      sfx('oops');
       haptic([18, 40, 18]);
       node.classList.add('tap__item--miss');
       setTimeout(() => node.classList.remove('tap__item--miss'), 420);

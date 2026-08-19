@@ -103,7 +103,7 @@ export function renderSudoku(puzzle, api) {
     cellNodes[i].appendChild(renderVisual(symbols[selected - 1], { size: 'sm' }));
     cellNodes[i].classList.add('sud__cell--set');
     pulse(cellNodes[i]);
-    sfx('pop');
+    sfx('snap');
     haptic(10);
     api.partial?.(filled / blanks);
 

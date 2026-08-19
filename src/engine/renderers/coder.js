@@ -131,9 +131,9 @@ export function renderCoder(puzzle, api) {
       if (gems.includes(pos) && !got.has(pos)) {
         got.add(pos);
         cells[pos]._gem?.classList.add('coder__gem--got');
-        sfx('pop');
+        sfx('coin');
       }
-      sfx('tick');
+      sfx('step');
       await sleep(280);
     }
 
@@ -149,7 +149,7 @@ export function renderCoder(puzzle, api) {
     }
 
     shake(boardEl);
-    sfx('wrong');
+    sfx(crashed ? 'bump' : 'oops');
     api.wrong({ from: boardEl });
     api.note?.(crashed ? 'Oops — the robot bumped into something!' : 'Not quite there yet.');
     await sleep(500);
@@ -173,7 +173,7 @@ export function renderCoder(puzzle, api) {
   const countEl = h('span.coder__count', `0/${maxSteps}`);
   const playBtn = h(
     'button.btn.btn--green.coder__play',
-    { type: 'button', onclick: run },
+    { type: 'button', onclick: () => { sfx('press'); run(); } },
     '▶ Play',
   );
 

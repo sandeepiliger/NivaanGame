@@ -82,14 +82,14 @@ export function renderConnect(puzzle, api) {
     if (i !== step) {
       if (i > step) {
         shake(wrap);
-        sfx('wrong');
+        sfx('oops');
         api.wrong({ from: wrap });
       }
       return;
     }
     step += 1;
     dotNodes[i].classList.add('con__dot--on');
-    sfx('tick');
+    sfx('count', step - 1);
     haptic(6);
     redraw();
     api.partial?.(step / dots.length);

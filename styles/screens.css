@@ -1285,3 +1285,9 @@
   font-weight: 800;
   color: var(--pink-deep);
 }
+
+/* A softer "not that one" for the toddler world, which never says wrong. */
+.play__flash--soft {
+  background: rgba(255, 138, 61, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}

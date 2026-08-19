@@ -3,7 +3,7 @@
  */
 
 import { defineRoute, start } from './core/router.js';
-import { unlockAudio, syncMusic, stopMusic, shutUp } from './core/audio.js';
+import { unlockAudio, syncMusic, stopMusic, shutUp, sfx, haptic } from './core/audio.js';
 import { startPlayClock } from './core/store.js';
 
 import { homeScreen } from './screens/home.js';
@@ -36,6 +36,30 @@ const firstGesture = () => {
 };
 window.addEventListener('pointerdown', firstGesture, { once: false });
 window.addEventListener('keydown', firstGesture, { once: false });
+
+/*
+ * Global UI sound. Every button, link and switch clicks, without each screen
+ * having to remember to wire it up. Elements that make their own, more
+ * specific noise opt out with `data-quiet` (game tiles, cards, maze cells…).
+ */
+document.addEventListener(
+  'pointerdown',
+  (event) => {
+    const el = event.target.closest?.(
+      'button, a[href], .switch, [role="button"], input[type="checkbox"]',
+    );
+    if (!el || el.disabled || el.closest('[data-quiet]')) return;
+
+    if (el.classList.contains('btn')) sfx('press');
+    else if (el.classList.contains('switch') || el.type === 'checkbox') {
+      sfx(el.querySelector('input')?.checked ?? el.checked ? 'toggleOff' : 'toggleOn');
+    } else if (/^(←|✕|✖)/.test(el.textContent || '')) sfx('back');
+    else sfx('tap');
+
+    haptic(8);
+  },
+  true,
+);
 
 // Pause sound when the app is backgrounded — important on phones.
 document.addEventListener('visibilitychange', () => {

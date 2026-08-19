@@ -48,7 +48,7 @@ export function profilesScreen() {
                   type: 'button',
                   onclick: () => {
                     switchProfile(p.id);
-                    sfx('pop');
+                    sfx('match');
                     render();
                   },
                 },
@@ -125,7 +125,6 @@ function editProfile(existing, onDone) {
             grid.querySelectorAll('.pedit__avatar').forEach((b) =>
               b.classList.toggle('pedit__avatar--on', b.textContent === avatar),
             );
-            sfx('tap');
           },
         },
         emoji,

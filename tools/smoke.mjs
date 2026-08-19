@@ -14,6 +14,9 @@ import { RENDERERS } from '../src/engine/session.js';
 import { dragDropIsSolvable } from '../src/engine/renderers/dragdrop.js';
 import { mazeIsSolvable } from '../src/games/maze-lib.js';
 import { solveProgram } from '../src/games/coder-lib.js';
+import { SFX_NAMES } from '../src/core/audio.js';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 let checks = 0;
 const failures = [];
@@ -199,6 +202,44 @@ const VALIDATORS = {
     }
   },
 
+  pop(p, ctx) {
+    assert(p.bubbles?.length >= 2, ctx, 'needs at least 2 bubbles');
+    const targets = p.popAll === false ? p.targets || [] : p.bubbles.map((_, i) => i);
+    assert(targets.length > 0, ctx, 'nothing to pop');
+    for (const i of targets) {
+      assert(i >= 0 && i < p.bubbles.length, ctx, `target index ${i} is out of range`);
+    }
+    for (const b of p.bubbles) {
+      assert(b.x >= 0 && b.x <= 100 && b.y >= 0 && b.y <= 100, ctx, 'bubble is off-scene');
+    }
+    // Bubbles are ~22% wide, so their centres must not sit on top of each other.
+    for (let i = 0; i < p.bubbles.length; i++) {
+      for (let k = i + 1; k < p.bubbles.length; k++) {
+        const d = Math.hypot(p.bubbles[i].x - p.bubbles[k].x, p.bubbles[i].y - p.bubbles[k].y);
+        assert(d > 14, ctx, `bubbles ${i} and ${k} overlap (${d.toFixed(1)} apart)`);
+      }
+    }
+  },
+
+  trace(p, ctx) {
+    assert(p.path?.length >= 3, ctx, 'needs at least 3 waypoints');
+    for (const point of p.path) {
+      assert(
+        point.x >= 2 && point.x <= 98 && point.y >= 2 && point.y <= 98,
+        ctx,
+        'a waypoint is off-canvas',
+      );
+    }
+    // Consecutive waypoints must be inside the 11-unit reach, or the trail
+    // breaks and the child cannot finish; but not so close they all trigger
+    // from one touch.
+    for (let i = 1; i < p.path.length; i++) {
+      const d = Math.hypot(p.path[i].x - p.path[i - 1].x, p.path[i].y - p.path[i - 1].y);
+      assert(d <= 11, ctx, `waypoints ${i - 1}→${i} are ${d.toFixed(1)} apart — out of reach`);
+      assert(d >= 3, ctx, `waypoints ${i - 1}→${i} are ${d.toFixed(1)} apart — too close`);
+    }
+  },
+
   connect(p, ctx) {
     assert(p.dots?.length >= 3, ctx, 'needs at least 3 dots');
     for (const dot of p.dots) {
@@ -343,6 +384,33 @@ console.log('\n  puzzle types exercised:');
 for (const [type, count] of Array.from(byType).sort((a, b) => b[1] - a[1])) {
   console.log(`    ${type.padEnd(10)} ${count}`);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Sound: every sfx() call must name an effect that exists                     */
+/* -------------------------------------------------------------------------- */
+
+const sourceFiles = [];
+(function walk(dir) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full);
+    else if (full.endsWith('.js')) sourceFiles.push(full);
+  }
+})(new URL('../src', import.meta.url).pathname);
+
+const usedSfx = new Set();
+for (const file of sourceFiles) {
+  const source = readFileSync(file, 'utf8');
+  for (const match of source.matchAll(/\bsfx\(\s*'([a-zA-Z]+)'/g)) {
+    usedSfx.add(match[1]);
+    assert(
+      SFX_NAMES.includes(match[1]),
+      file.replace(/.*\/src\//, 'src/'),
+      `sfx("${match[1]}") is not a real effect`,
+    );
+  }
+}
+console.log(`\n  sound effects: ${SFX_NAMES.length} defined, ${usedSfx.size} used`);
 
 // Every renderer must be reachable through real content.
 for (const type of Object.keys(RENDERERS)) {

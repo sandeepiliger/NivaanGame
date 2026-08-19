@@ -210,6 +210,71 @@ export const ALL_OBJECTS = Array.from(new Set(THEME_IDS.flatMap((id) => THEMES[i
 export const CONTRAST_THEMES = ['fruit', 'animals', 'vehicles', 'clothes', 'toys', 'sports', 'music'];
 
 /* -------------------------------------------------------------------------- */
+/* Toddler content (ages 2–4)                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The first animals a toddler names, with the noise each one makes. Sound is
+ * the way in at this age — a two-year-old who cannot read "cow" knows "moo".
+ */
+export const FIRST_ANIMALS = [
+  { name: 'dog', emoji: '🐶', sound: 'Woof woof' },
+  { name: 'cat', emoji: '🐱', sound: 'Meow' },
+  { name: 'cow', emoji: '🐮', sound: 'Moo' },
+  { name: 'duck', emoji: '🦆', sound: 'Quack quack' },
+  { name: 'sheep', emoji: '🐑', sound: 'Baa' },
+  { name: 'pig', emoji: '🐷', sound: 'Oink oink' },
+  { name: 'lion', emoji: '🦁', sound: 'Roar' },
+  { name: 'bee', emoji: '🐝', sound: 'Buzz buzz' },
+  { name: 'frog', emoji: '🐸', sound: 'Ribbit' },
+  { name: 'horse', emoji: '🐴', sound: 'Neigh' },
+  { name: 'monkey', emoji: '🐵', sound: 'Ooh ooh ah ah' },
+  { name: 'bird', emoji: '🐦', sound: 'Tweet tweet' },
+  { name: 'mouse', emoji: '🐭', sound: 'Squeak' },
+  { name: 'elephant', emoji: '🐘', sound: 'Trumpet' },
+];
+
+/** Everyday things a toddler can already name. */
+export const FIRST_WORDS = [
+  { name: 'ball', emoji: '⚽' },
+  { name: 'car', emoji: '🚗' },
+  { name: 'cup', emoji: '🥤' },
+  { name: 'shoe', emoji: '👟' },
+  { name: 'hat', emoji: '👒' },
+  { name: 'apple', emoji: '🍎' },
+  { name: 'banana', emoji: '🍌' },
+  { name: 'star', emoji: '⭐' },
+  { name: 'sun', emoji: '☀️' },
+  { name: 'flower', emoji: '🌸' },
+  { name: 'teddy', emoji: '🧸' },
+  { name: 'book', emoji: '📕' },
+  { name: 'bus', emoji: '🚌' },
+  { name: 'boat', emoji: '⛵' },
+  { name: 'cake', emoji: '🍰' },
+  { name: 'balloon', emoji: '🎈' },
+];
+
+/** Animal → the food it wants, for the "feed the animal" game. */
+export const ANIMAL_FOOD = [
+  { animal: '🐰', food: '🥕', name: 'rabbit' },
+  { animal: '🐵', food: '🍌', name: 'monkey' },
+  { animal: '🐭', food: '🧀', name: 'mouse' },
+  { animal: '🐶', food: '🦴', name: 'dog' },
+  { animal: '🐻', food: '🍯', name: 'bear' },
+  { animal: '🐼', food: '🎋', name: 'panda' },
+  { animal: '🐔', food: '🌽', name: 'hen' },
+  { animal: '🐿️', food: '🌰', name: 'squirrel' },
+  { animal: '🐱', food: '🐟', name: 'cat' },
+  { animal: '🐘', food: '🥜', name: 'elephant' },
+];
+
+/** Praise pitched at a two-year-old: short, warm, no long words. */
+export const TODDLER_PRAISE = [
+  'Yay!', 'Woohoo!', 'You did it!', 'Clever you!', 'Hooray!',
+  'Good job!', 'Wow!', 'Yes!', 'Amazing!', 'High five!',
+];
+
+/* -------------------------------------------------------------------------- */
 /* Misc                                                                        */
 /* -------------------------------------------------------------------------- */
 

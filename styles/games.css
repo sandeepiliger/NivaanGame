@@ -12,24 +12,29 @@
   user-select: none;
 }
 
-.v--xs {
-  font-size: 18px;
-}
-.v--sm {
-  font-size: clamp(24px, 6vw, 34px);
-}
-.v--md {
-  font-size: clamp(32px, 9vw, 48px);
-}
-.v--lg {
-  font-size: clamp(40px, 12vw, 64px);
-}
-.v--xl {
-  font-size: clamp(52px, 17vw, 92px);
+/*
+ * Sizes are held in `--vsize` rather than set directly, so a per-visual
+ * `--scale` (used by the size-ordering games) can multiply the chosen size
+ * instead of replacing it.
+ */
+.v {
+  font-size: calc(var(--vsize, 16px) * var(--scale, 1));
 }
 
-.v--emoji {
-  font-size: calc(1em * var(--scale, 1));
+.v--xs {
+  --vsize: 18px;
+}
+.v--sm {
+  --vsize: clamp(24px, 6vw, 34px);
+}
+.v--md {
+  --vsize: clamp(32px, 9vw, 48px);
+}
+.v--lg {
+  --vsize: clamp(40px, 12vw, 64px);
+}
+.v--xl {
+  --vsize: clamp(52px, 17vw, 92px);
 }
 
 .v--text,
@@ -101,7 +106,8 @@
   justify-content: center;
   gap: 0.1em;
   max-width: 100%;
-  font-size: clamp(20px, 6.5vw, 40px);
+  /* Groups set their own size: a row of twenty must fit where one emoji sits. */
+  --vsize: clamp(20px, 6.5vw, 40px);
 }
 
 .v__countitem {
@@ -1142,4 +1148,128 @@
 
 .con__reveal {
   transition: opacity 400ms ease-out;
+}
+
+/* --- Pop the bubbles (toddler) ------------------------------------------ */
+
+.play__body--pop {
+  gap: 8px;
+}
+
+.pop__counter {
+  align-self: center;
+  padding: 8px 20px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 900;
+  box-shadow: var(--lift-1);
+}
+
+.pop__scene {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 320px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #d9f6ff 0%, #b8ecff 60%, #9fe3ff 100%);
+  box-shadow: var(--lift-2);
+  overflow: hidden;
+}
+
+.pop__bubble {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: calc(22% * var(--size, 1));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* A soap-bubble look: tinted glass with a bright rim. */
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 50% 50%, hsla(var(--hue), 90%, 82%, 0.55), hsla(var(--hue), 85%, 62%, 0.72));
+  box-shadow:
+    inset 0 -6px 14px hsla(var(--hue), 80%, 45%, 0.35),
+    0 6px 16px rgba(0, 0, 0, 0.14);
+  transform: translate(-50%, -50%);
+  animation: bubble-drift var(--drift, 3s) ease-in-out var(--offset, 0s) infinite;
+}
+
+@keyframes bubble-drift {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 10px)) scale(1.045);
+  }
+}
+
+.pop__shine {
+  position: absolute;
+  top: 16%;
+  left: 22%;
+  width: 24%;
+  height: 18%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  transform: rotate(-24deg);
+}
+
+.pop__face {
+  font-size: clamp(26px, 8vw, 44px);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.14));
+}
+
+.pop__bubble--gone {
+  animation: bubble-burst 320ms var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+@keyframes bubble-burst {
+  40% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.pop__bubble--glow {
+  box-shadow: inset 0 -6px 14px hsla(var(--hue), 80%, 45%, 0.35), 0 0 0 6px #ffcc29;
+}
+
+/* --- Trace a path (toddler) --------------------------------------------- */
+
+.play__body--trace {
+  align-items: center;
+}
+
+.trace {
+  width: min(100%, 62vh);
+  aspect-ratio: 1;
+  border-radius: var(--r-lg);
+  background: #fff8e6;
+  box-shadow: var(--lift-2);
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.trace__svg {
+  width: 100%;
+  height: 100%;
+}
+
+.trace__hero {
+  transition: x 120ms linear, y 120ms linear;
+}
+
+.trace__dot--on {
+  fill: #3ecf6d;
+}
+
+.trace__dot--glow {
+  animation: crumb 1s ease-in-out infinite;
 }

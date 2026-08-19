@@ -69,7 +69,6 @@ export function parentsScreen() {
                       String(Number(b.dataset.value) === settings().breakAfterMin),
                     ),
                   );
-                  sfx('tap');
                 },
               },
               option.label,

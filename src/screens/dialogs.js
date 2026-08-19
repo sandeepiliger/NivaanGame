@@ -19,8 +19,10 @@ function openModal(content, { dismissable = true } = {}) {
     box,
   );
   document.body.appendChild(modal);
+  sfx('open');
 
   function close() {
+    sfx('close');
     modal.remove();
     document.removeEventListener('keydown', onKey);
   }

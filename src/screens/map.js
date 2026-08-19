@@ -38,7 +38,8 @@ export function mapScreen(params) {
   const doneCount = levels.filter((l) => isCompleted(l.id)).length;
   const starCount = levels.reduce((sum, l) => sum + starsFor(l.id), 0);
 
-  const path = h('div.map__path');
+  // Nodes make their own sounds, so opt out of the global click handler.
+  const path = h('div.map__path', { 'data-quiet': '' });
   let lastTier = 0;
 
   levels.forEach((level) => {
@@ -67,13 +68,13 @@ export function mapScreen(params) {
         onclick: (event) => {
           if (!unlocked) {
             event.preventDefault();
-            sfx('wrong');
+            sfx('oops');
             speak('Finish the level before this one first.');
             node.classList.add('mapnode--shake');
             setTimeout(() => node.classList.remove('mapnode--shake'), 400);
             return;
           }
-          sfx('tap');
+          sfx('press');
         },
       },
       h(
@@ -127,7 +128,6 @@ export function mapScreen(params) {
         {
           type: 'button',
           onclick: () => {
-            sfx('tap');
             go('play', { level: nextPlayableLevel(category.id).id });
           },
         },
