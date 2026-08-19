@@ -1,0 +1,378 @@
+/* ==========================================================================
+   Shared components: buttons, cards, bars, dialogs, confetti
+   ========================================================================== */
+
+/* --- Buttons ------------------------------------------------------------ */
+
+.btn {
+  --btn-bg: var(--yellow);
+  --btn-edge: var(--yellow-deep);
+  --btn-ink: var(--ink);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 26px;
+  border-radius: var(--r-pill);
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  box-shadow: 0 5px 0 var(--btn-edge), 0 10px 20px rgba(42, 35, 80, 0.18);
+  transition: transform 90ms var(--ease-out), box-shadow 90ms var(--ease-out),
+    filter 120ms linear;
+  user-select: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--btn-edge), 0 4px 10px rgba(42, 35, 80, 0.18);
+}
+
+.btn:disabled {
+  filter: grayscale(0.6) opacity(0.55);
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 3px;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.btn--lg {
+  min-height: 68px;
+  font-size: 23px;
+  padding: 0 34px;
+}
+
+.btn--purple {
+  --btn-bg: var(--purple);
+  --btn-edge: var(--purple-deep);
+  --btn-ink: #fff;
+}
+.btn--green {
+  --btn-bg: var(--green);
+  --btn-edge: var(--green-deep);
+  --btn-ink: #fff;
+}
+.btn--pink {
+  --btn-bg: var(--pink);
+  --btn-edge: var(--pink-deep);
+  --btn-ink: #fff;
+}
+.btn--cyan {
+  --btn-bg: var(--cyan);
+  --btn-edge: var(--cyan-deep);
+  --btn-ink: #fff;
+}
+.btn--ghost {
+  --btn-bg: rgba(255, 255, 255, 0.16);
+  --btn-edge: rgba(0, 0, 0, 0.14);
+  --btn-ink: #fff;
+}
+.btn--paper {
+  --btn-bg: var(--paper);
+  --btn-edge: #d9d3f5;
+  --btn-ink: var(--ink);
+}
+
+/* Round icon button — used for back, sound, hint, etc. */
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+  transition: transform 90ms var(--ease-out), background 120ms linear;
+}
+
+.iconbtn:active {
+  transform: translateY(3px) scale(0.96);
+  box-shadow: none;
+}
+
+.iconbtn--paper {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 #d9d3f5;
+}
+
+.iconbtn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.iconbtn[aria-pressed="false"] {
+  opacity: 0.55;
+}
+
+/* --- Top bar ------------------------------------------------------------ */
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(var(--sat) + 10px) calc(var(--sar) + var(--pad)) 10px
+    calc(var(--sal) + var(--pad));
+}
+
+.topbar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Cards -------------------------------------------------------------- */
+
+.card {
+  background: var(--paper);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-2);
+  padding: var(--pad);
+}
+
+/* --- Progress bar ------------------------------------------------------- */
+
+.bar {
+  position: relative;
+  height: 14px;
+  flex: 1 1 auto;
+  border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--green), #9dff8f);
+  transition: width 320ms var(--ease-out);
+}
+
+/* --- Stars -------------------------------------------------------------- */
+
+.stars {
+  display: inline-flex;
+  gap: 3px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Unearned stars read as empty slots, not as pale stars, so a child can tell
+   at a glance how many are still to win. */
+.star--off {
+  filter: grayscale(1) contrast(0.15) brightness(1.35);
+  opacity: 0.6;
+}
+
+/* --- Badge / chip ------------------------------------------------------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.chip--paper {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+/* --- Modal / sheet ------------------------------------------------------ */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 22, 66, 0.62);
+  backdrop-filter: blur(3px);
+  animation: fade-in 160ms linear both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.modal__box {
+  width: min(420px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: var(--r-xl);
+  padding: 24px 20px calc(20px + var(--sab));
+  box-shadow: var(--lift-3);
+  text-align: center;
+  animation: pop-in 280ms var(--ease-bounce) both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86) translateY(20px);
+  }
+}
+
+.modal__title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.modal__text {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- Mascot ------------------------------------------------------------- */
+
+.mascot {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mascot-wrap {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+/* --- Toast -------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--sab));
+  z-index: 950;
+  transform: translateX(-50%);
+  padding: 12px 22px;
+  border-radius: var(--r-pill);
+  background: rgba(30, 22, 66, 0.92);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: var(--lift-2);
+  animation: toast-in 240ms var(--ease-bounce) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+}
+
+/* --- Confetti / particles ---------------------------------------------- */
+
+.confetti {
+  position: absolute;
+  width: 11px;
+  height: 15px;
+  border-radius: 2px;
+  will-change: transform, opacity;
+}
+
+.floatup {
+  position: absolute;
+  font-size: 30px;
+  font-weight: 900;
+  will-change: transform, opacity;
+  animation: floatup 900ms var(--ease-out) both;
+}
+
+@keyframes floatup {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -90px) scale(1.25);
+  }
+}
+
+/* --- Utility ------------------------------------------------------------ */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.center {
+  display: grid;
+  place-items: center;
+}
+
+.hidden {
+  display: none !important;
+}
