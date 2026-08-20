@@ -5,6 +5,8 @@
 import { defineRoute, start } from './core/router.js';
 import { unlockAudio, unlockVoice, syncMusic, stopMusic, shutUp, sfx, haptic } from './core/audio.js';
 import { startPlayClock } from './core/store.js';
+import { initAds } from './core/ads.js';
+import { restorePurchases } from './core/purchases.js';
 
 import { homeScreen } from './screens/home.js';
 import { mapScreen } from './screens/map.js';
@@ -26,6 +28,10 @@ defineRoute('profiles', profilesScreen);
 
 /* -------------------------------------------------------------------------- */
 
+// No gesture needed for this — just a purchase-history query — so it can run
+// as soon as the app boots, well before the home screen might show a banner.
+restorePurchases();
+
 // Browsers block audio until the first gesture; unlock on whichever comes first.
 // Voice needs the same treatment: several mobile browsers only let
 // speechSynthesis produce sound once it's been used inside a real tap, so a
@@ -38,6 +44,7 @@ const firstGesture = () => {
   unlockVoice();
   syncMusic();
   startPlayClock();
+  initAds();
   window.removeEventListener('pointerdown', firstGesture);
   window.removeEventListener('keydown', firstGesture);
 };

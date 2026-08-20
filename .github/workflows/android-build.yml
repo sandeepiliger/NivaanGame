@@ -1,0 +1,99 @@
+name: Android Build
+
+# The android/ project isn't committed (it's fully regenerated from
+# capacitor.config.json + the installed plugins — see DEPLOYMENT.md), and
+# building it needs the real Android SDK/Google Maven, which isn't reachable
+# from every environment. GitHub's own runners have full internet access,
+# so this workflow is the actual build verification for the native app.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'styles/**'
+      - 'index.html'
+      - 'manifest.webmanifest'
+      - 'sw.js'
+      - 'assets/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'tools/build-www.mjs'
+      - 'tools/android-patch.mjs'
+      - 'tools/android-signing.mjs'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Stage web assets
+        run: npm run build:www
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Patch AdMob manifest entry
+        run: node tools/android-patch.mjs
+
+      # Only present once you've created a Firebase project and added this
+      # secret (see DEPLOYMENT.md) — analytics silently no-ops without it,
+      # so the build succeeds either way.
+      - name: Write Firebase config
+        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - name: Debug build (always — proves the native wiring compiles)
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nivaan-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Only runs once you've created a signing keystore and added the four
+      # ANDROID_* secrets below (see DEPLOYMENT.md) — until then, the debug
+      # APK above is the build verification, and there's nothing to sign yet.
+      - name: Decode signing keystore
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      - name: Add release signing config
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+        run: node tools/android-signing.mjs
+
+      - name: Release build (signed AAB, for Play Store upload)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          name: nivaan-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab

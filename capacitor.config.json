@@ -1,0 +1,18 @@
+{
+  "appId": "com.labs32.nivaangame",
+  "appName": "Nivaan Learning Games",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#6c4ce0",
+      "showSpinner": false
+    },
+    "AdMob": {
+      "appId": "ca-app-pub-3940256099942544~3347511713"
+    }
+  }
+}

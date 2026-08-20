@@ -25,6 +25,7 @@ import {
 } from '../core/audio.js';
 import { confirmDialog, infoDialog } from './dialogs.js';
 import { toast } from '../core/fx.js';
+import { removeAdsPrice, buyRemoveAds } from '../core/purchases.js';
 
 const BREAK_OPTIONS = [
   { value: 0, label: 'Off' },
@@ -99,6 +100,53 @@ function renderVoiceList(voiceListEl) {
   voiceListEl.append(...rows);
 }
 
+function removeAdsCard() {
+  if (settings().adsRemoved) {
+    return h(
+      'section.card.parents__card',
+      h('h2.parents__head', 'Ads'),
+      h('p.parents__note', '✅ Ads are removed on this device. Thank you for supporting Nivaan!'),
+    );
+  }
+
+  const buyBtn = h(
+    'button.btn.btn--green.btn--block',
+    {
+      type: 'button',
+      onclick: async () => {
+        buyBtn.disabled = true;
+        buyBtn.textContent = 'Opening Play Store…';
+        const bought = await buyRemoveAds();
+        if (bought) {
+          sfx('unlock');
+          infoDialog({
+            emoji: '🎉',
+            title: 'Ads removed!',
+            text: 'Thanks for supporting Nivaan Learning Games — enjoy the ad-free experience.',
+          });
+          card.replaceWith(removeAdsCard());
+        } else {
+          buyBtn.disabled = false;
+          buyBtn.textContent = '🚫 Remove ads';
+        }
+      },
+    },
+    '🚫 Remove ads',
+  );
+
+  removeAdsPrice().then((price) => {
+    if (price) buyBtn.textContent = `🚫 Remove ads — ${price}`;
+  });
+
+  const card = h(
+    'section.card.parents__card',
+    h('h2.parents__head', 'Ads'),
+    h('p.parents__note', 'A one-time purchase removes all ads from the app, forever.'),
+    buyBtn,
+  );
+  return card;
+}
+
 export function parentsScreen() {
   const voiceListEl = h('div.parents__voicelist');
   renderVoiceList(voiceListEl);
@@ -160,6 +208,7 @@ export function parentsScreen() {
         styleChipRow(),
         voiceListEl,
       ),
+      removeAdsCard(),
       h(
         'section.card.parents__card',
         h('h2.parents__head', 'Healthy play'),

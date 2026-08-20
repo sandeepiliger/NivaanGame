@@ -6,6 +6,7 @@
  */
 
 import { emit } from './bus.js';
+import { unlockAchievement } from './analytics.js';
 
 const KEY = 'nivaan.save.v1';
 const SCHEMA = 1;
@@ -50,9 +51,13 @@ function freshSave() {
       voiceStyle: 'energetic',
       /** A specific SpeechSynthesisVoice.voiceURI, or null to auto-pick the best one. */
       voiceURI: null,
+      /** Set by the "Remove Ads" purchase — see core/purchases.js. */
+      adsRemoved: false,
     },
     /** Session-scoped, but persisted so a reload does not reset the timer. */
     sessionStartedAt: 0,
+    /** Levels completed since the last interstitial — see noteLevelCompleteForAds(). */
+    adCounter: 0,
   };
 }
 
@@ -212,6 +217,7 @@ export function grantReward(id) {
   p.rewards[id] = Date.now();
   persist();
   emit('reward:unlock', id);
+  unlockAchievement(id);
   return true;
 }
 
@@ -234,6 +240,30 @@ export function playClockMinutes() {
 export function resetPlayClock() {
   save.sessionStartedAt = Date.now();
   persist();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Ads                                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Every Nth level completion earns an interstitial, never more often. */
+const INTERSTITIAL_EVERY = 3;
+
+/**
+ * Call once per finished level. Returns whether this was the Nth one, i.e.
+ * whether an interstitial should be shown now. The toddler world never
+ * shows one — a 2-4 year old can't reliably navigate an ad away.
+ */
+export function noteLevelCompleteForAds(categoryId) {
+  if (categoryId === 'toddler') return false;
+  save.adCounter = (save.adCounter || 0) + 1;
+  if (save.adCounter < INTERSTITIAL_EVERY) {
+    persist();
+    return false;
+  }
+  save.adCounter = 0;
+  persist();
+  return true;
 }
 
 /* -------------------------------------------------------------------------- */

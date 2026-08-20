@@ -3,8 +3,14 @@ package-lock.json
 .DS_Store
 *.log
 
-# Capacitor / native wrappers, generated on demand
+# Capacitor: native platform folders and staged web assets are regenerated
+# on demand (npm run android:sync) — capacitor.config.json is real source
+# and IS committed. google-services.json and any keystore are secrets —
+# never commit those; see DEPLOYMENT.md.
 android/
 ios/
-capacitor.config.*
+www/
+google-services.json
+*.keystore
+*.jks
 tools/shots/

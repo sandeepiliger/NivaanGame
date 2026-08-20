@@ -5,13 +5,14 @@
 import { h, wait } from '../core/dom.js';
 import { go } from '../core/router.js';
 import { levelById, levelsFor, categoryById } from '../data/catalog.js';
-import { profile, grantReward, totalStars } from '../core/store.js';
+import { profile, grantReward, totalStars, noteLevelCompleteForAds } from '../core/store.js';
 import { pendingRewards } from '../data/rewards.js';
 import { sfx, speak } from '../core/audio.js';
 import { confetti } from '../core/fx.js';
 import { mascot } from '../ui/mascot.js';
 import { isUnlocked } from './map.js';
 import { infoDialog } from './dialogs.js';
+import { maybeShowInterstitial } from '../core/ads.js';
 
 const PRAISE_BY_STARS = {
   3: ['Perfect!', 'Amazing work!', 'You are a star!', 'Excellent!'],
@@ -113,7 +114,16 @@ export function resultScreen(params) {
         sfx('applause');
       }
       await wait(400);
+      // An interstitial and a new-reward popup competing for the same
+      // moment would be jarring, so an ad only ever shows here when there
+      // is nothing to celebrate.
+      const hasNewReward = pendingRewards(profile().rewards).length > 0;
+      const dueForAd = category && !isDaily && noteLevelCompleteForAds(category.id);
       celebrateNewRewards();
+      if (dueForAd && !hasNewReward) {
+        await wait(700);
+        maybeShowInterstitial();
+      }
     },
   };
 }

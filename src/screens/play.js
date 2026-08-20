@@ -17,6 +17,7 @@ import {
 } from '../core/store.js';
 import { PRAISE, NUDGE, TODDLER_PRAISE } from '../data/content.js';
 import { showBreakReminder } from './dialogs.js';
+import { levelStart, levelEnd } from '../core/analytics.js';
 
 /** Wrong answers on one round before we offer to show the answer. */
 const REVEAL_AFTER = 3;
@@ -268,6 +269,13 @@ export function playScreen(params) {
     if (!isDaily) {
       recordLevel(level.id, { ...summary, skillId: level.skillId });
     }
+    levelEnd({
+      levelId: summary.levelId,
+      categoryId: category?.id,
+      success: summary.stars > 0,
+      stars: summary.stars,
+      ms: summary.ms,
+    });
     sfx('win');
     go('result', {
       level: isDaily ? '' : level.id,
@@ -300,6 +308,11 @@ export function playScreen(params) {
       // level) already triggers that listener before this ever runs.
       unlockAudio();
       startPlayClock();
+      levelStart({
+        levelId: isDaily ? `daily-${todayKey()}` : level.id,
+        categoryId: category?.id,
+        tier: level?.tier,
+      });
       renderRound();
     },
     onLeave() {

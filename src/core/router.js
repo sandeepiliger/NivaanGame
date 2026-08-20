@@ -8,6 +8,7 @@
 
 import { clear } from './dom.js';
 import { shutUp } from './audio.js';
+import { screenView } from './analytics.js';
 
 const routes = new Map();
 let mount = null;
@@ -70,6 +71,7 @@ function renderFromHash(fallback) {
   // Land at the top of every new screen.
   screen.el?.querySelector('.screen__scroll')?.scrollTo?.(0, 0);
   screen.onEnter?.();
+  screenView(routeName || 'home');
 }
 
 function errorScreen(err) {

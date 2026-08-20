@@ -10,6 +10,8 @@ import { MASCOT_LINES } from '../data/content.js';
 import { mascot, speechBubble } from '../ui/mascot.js';
 import { sfx, speak, unlockAudio, unlockVoice, syncMusic } from '../core/audio.js';
 import { parentGate } from './dialogs.js';
+import { selectCategory } from '../core/analytics.js';
+import { showHomeBanner, hideBanner } from '../core/ads.js';
 
 export function homeScreen() {
   const me = profile();
@@ -24,6 +26,7 @@ export function homeScreen() {
       'a.catcard',
       {
         href: href('map', { cat: category.id }),
+        onclick: () => selectCategory(category.id),
         style: { '--c': category.color, '--e': category.edge, '--ink': category.ink },
       },
       h('span.catcard__emoji', category.emoji),
@@ -114,6 +117,10 @@ export function homeScreen() {
       unlockAudio();
       syncMusic();
       speak(line);
+      showHomeBanner();
+    },
+    onLeave() {
+      hideBanner();
     },
   };
 }
