@@ -5,6 +5,11 @@ name: Android Build
 # building it needs the real Android SDK/Google Maven, which isn't reachable
 # from every environment. GitHub's own runners have full internet access,
 # so this workflow is the actual build verification for the native app.
+#
+# The Android SDK is set up with plain shell commands rather than a
+# marketplace action — some org policies only allow actions from GitHub
+# itself, and a third-party action reference then fails the whole run
+# before any job is even created.
 
 on:
   push:
@@ -24,6 +29,9 @@ on:
       - '.github/workflows/android-build.yml'
   workflow_dispatch:
 
+env:
+  ANDROID_SDK_ROOT: /opt/android-sdk
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,7 +50,19 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        run: |
+          set -e
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          curl -sSL -o /tmp/cmdline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "platforms;android-36" "build-tools;35.0.0"
 
       - name: Stage web assets
         run: npm run build:www
