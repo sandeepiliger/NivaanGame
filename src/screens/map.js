@@ -100,7 +100,7 @@ export function mapScreen(params) {
 
   const el = h(
     'div.screen.map',
-    { style: { '--theme': category.color, '--edge': category.edge, '--ink': category.ink } },
+    { style: { '--theme': category.color, '--edge': category.edge } },
     h(
       'div.topbar',
       h('button.iconbtn', { type: 'button', 'aria-label': 'Back', onclick: () => go('home') }, '←'),
