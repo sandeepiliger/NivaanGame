@@ -3,7 +3,7 @@
  * reminders, profile management and a progress reset.
  */
 
-import { h } from '../core/dom.js';
+import { h, clear } from '../core/dom.js';
 import { go } from '../core/router.js';
 import {
   settings,
@@ -13,7 +13,16 @@ import {
   exportSave,
   totalStars,
 } from '../core/store.js';
-import { syncMusic, speak, sfx, diagnoseVoice } from '../core/audio.js';
+import {
+  syncMusic,
+  speak,
+  sfx,
+  diagnoseVoice,
+  listVoices,
+  previewVoice,
+  refreshVoice,
+  VOICE_STYLES,
+} from '../core/audio.js';
 import { confirmDialog, infoDialog } from './dialogs.js';
 import { toast } from '../core/fx.js';
 
@@ -25,7 +34,80 @@ const BREAK_OPTIONS = [
   { value: 45, label: '45 min' },
 ];
 
+const VOICE_STYLE_LIST = Object.entries(VOICE_STYLES).map(([value, v]) => ({ value, label: v.label }));
+
+function styleChipRow() {
+  const chips = VOICE_STYLE_LIST.map((option) => {
+    const btn = h(
+      'button.parents__chip',
+      {
+        type: 'button',
+        'aria-pressed': String(settings().voiceStyle === option.value),
+        onclick: () => {
+          setSetting('voiceStyle', option.value);
+          chips.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === settings().voiceStyle)));
+          previewVoice(settings().voiceURI, option.value);
+        },
+      },
+      option.label,
+    );
+    btn.dataset.value = option.value;
+    return btn;
+  });
+  return h('div.parents__chips', chips);
+}
+
+function voiceRow(v, voiceListEl) {
+  const selected = settings().voiceURI === v.voiceURI;
+  return h(
+    'div.parents__voicerow' + (selected ? '.parents__voicerow--on' : ''),
+    h(
+      'button.parents__voicename',
+      {
+        type: 'button',
+        onclick: () => {
+          setSetting('voiceURI', v.voiceURI);
+          refreshVoice();
+          renderVoiceList(voiceListEl);
+          previewVoice(v.voiceURI, settings().voiceStyle);
+        },
+      },
+      (v.recommended ? '⭐ ' : '') + v.name + (v.lang ? ` (${v.lang})` : ''),
+    ),
+    v.voiceURI
+      ? h(
+          'button.iconbtn',
+          {
+            type: 'button',
+            'aria-label': 'Preview this voice',
+            onclick: (event) => {
+              event.stopPropagation();
+              previewVoice(v.voiceURI, settings().voiceStyle);
+            },
+          },
+          '▶',
+        )
+      : null,
+  );
+}
+
+function renderVoiceList(voiceListEl) {
+  clear(voiceListEl);
+  const voices = listVoices();
+  const rows = [voiceRow({ voiceURI: null, name: 'Auto (recommended)' }, voiceListEl)];
+  voices.slice(0, 12).forEach((v) => rows.push(voiceRow(v, voiceListEl)));
+  voiceListEl.append(...rows);
+}
+
 export function parentsScreen() {
+  const voiceListEl = h('div.parents__voicelist');
+  renderVoiceList(voiceListEl);
+  if (typeof speechSynthesis !== 'undefined') {
+    // Voices can still be loading when this screen mounts; refresh once they
+    // arrive so the list isn't stuck showing nothing (or too few options).
+    speechSynthesis.addEventListener?.('voiceschanged', () => renderVoiceList(voiceListEl), { once: true });
+  }
+
   const el = h(
     'div.screen.parents',
     h(
@@ -70,6 +152,13 @@ export function parentsScreen() {
           },
           '🔎 Test voice (debug)',
         ),
+      ),
+      h(
+        'section.card.parents__card',
+        h('h2.parents__head', 'Voice'),
+        h('p.parents__note', 'Pick how excited the voice sounds, and which voice it uses.'),
+        styleChipRow(),
+        voiceListEl,
       ),
       h(
         'section.card.parents__card',

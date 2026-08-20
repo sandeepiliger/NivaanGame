@@ -46,6 +46,10 @@ function freshSave() {
       breakAfterMin: 20,
       /** Skip the "which level" map and auto-advance. */
       autoAdvance: true,
+      /** 'calm' | 'cheerful' | 'energetic' — see VOICE_STYLES in audio.js. */
+      voiceStyle: 'energetic',
+      /** A specific SpeechSynthesisVoice.voiceURI, or null to auto-pick the best one. */
+      voiceURI: null,
     },
     /** Session-scoped, but persisted so a reload does not reset the timer. */
     sessionStartedAt: 0,

@@ -1095,6 +1095,45 @@
   color: #fff;
 }
 
+.parents__voicelist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.parents__voicerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--r-md);
+  background: var(--paper-2);
+}
+
+.parents__voicerow--on {
+  background: var(--purple);
+  color: #fff;
+}
+
+.parents__voicename {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.parents__voicerow .iconbtn {
+  flex: 0 0 auto;
+  margin-right: 6px;
+}
+
 .switch {
   display: flex;
   align-items: center;

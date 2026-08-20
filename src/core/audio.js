@@ -647,28 +647,81 @@ function isIndianEnglish(v) {
   return vl === 'en-in' || (vl.startsWith('en') && INDIAN_VOICE_NAME_RE.test(v.name || ''));
 }
 
+/**
+ * Rate/pitch presets a parent can pick in the "Voice" section — the Web
+ * Speech API has no "mood" of its own, so tone comes entirely from how fast
+ * and how high the voice speaks.
+ */
+export const VOICE_STYLES = {
+  calm: { rate: 0.85, pitch: 1.0, label: '😌 Calm' },
+  cheerful: { rate: 0.95, pitch: 1.2, label: '🙂 Cheerful' },
+  energetic: { rate: 1.08, pitch: 1.35, label: '🤩 Energetic' },
+};
+
+/**
+ * How well a voice fits, absent a parent's manual pick: Indian-accented
+ * English first, then how closely it matches the device's own language,
+ * then a warm, kid-friendly tone.
+ */
+function scoreVoice(v, lang, base) {
+  let s = 0;
+  const vl = (v.lang || '').toLowerCase().replace('_', '-');
+  if (isIndianEnglish(v)) s += 100;
+  if (vl === lang) s += 10;
+  else if (vl.startsWith(base)) s += 6;
+  if (/female|samantha|karen|zira|google us english|aria|ava|kids|child/i.test(v.name)) s += 4;
+  if (v.localService) s += 1;
+  return s;
+}
+
 function pickVoice() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
   const available = speechSynthesis.getVoices();
   if (!available.length) return null;
   voicesReady = true;
 
+  // A parent's manual pick (see the "Voice" section of the parent zone)
+  // always wins over the automatic best-guess, as long as it still exists
+  // on this device.
+  const chosenURI = settings().voiceURI;
+  if (chosenURI) {
+    const chosen = available.find((v) => v.voiceURI === chosenURI);
+    if (chosen) return chosen;
+  }
+
   const lang = (navigator.language || 'en-US').toLowerCase();
   const base = lang.split('-')[0];
-  // The house voice is Indian-accented English; everything else is a graceful
-  // fallback for devices that don't happen to ship one, scored by how well it
-  // still matches the device's own language and by a warm, kid-friendly tone.
-  const score = (v) => {
-    let s = 0;
-    const vl = (v.lang || '').toLowerCase().replace('_', '-');
-    if (isIndianEnglish(v)) s += 100;
-    if (vl === lang) s += 10;
-    else if (vl.startsWith(base)) s += 6;
-    if (/female|samantha|karen|zira|google us english|aria|ava|kids|child/i.test(v.name)) s += 4;
-    if (v.localService) s += 1;
-    return s;
-  };
-  return available.slice().sort((a, b) => score(b) - score(a))[0] || null;
+  return available.slice().sort((a, b) => scoreVoice(b, lang, base) - scoreVoice(a, lang, base))[0] || null;
+}
+
+/** Re-run voice selection — call after the parent zone changes voiceURI. */
+export function refreshVoice() {
+  voice = pickVoice();
+}
+
+/**
+ * English voices available on this device, best-sounding first, for the
+ * parent zone's "Voice" picker. Falls back to every voice on the rare
+ * device with no English ones at all.
+ */
+export function listVoices() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+  const available = speechSynthesis.getVoices();
+  if (!available.length) return [];
+  const lang = (navigator.language || 'en-US').toLowerCase();
+  const base = lang.split('-')[0];
+  const english = available.filter((v) => (v.lang || '').toLowerCase().startsWith('en'));
+  const pool = english.length ? english : available;
+  return pool
+    .slice()
+    .sort((a, b) => scoreVoice(b, lang, base) - scoreVoice(a, lang, base))
+    .map((v) => ({
+      voiceURI: v.voiceURI,
+      name: v.name,
+      lang: v.lang,
+      localService: v.localService,
+      recommended: isIndianEnglish(v),
+    }));
 }
 
 // Guarded so this module can also be imported by the Node smoke tests.
@@ -752,21 +805,63 @@ function fireUtterance(text, { rate, pitch, useVoice, retryOnError }) {
 
 /**
  * Speak a prompt aloud. Cancels anything already speaking so prompts never
- * queue up and lag behind the child's taps.
+ * queue up and lag behind the child's taps. Rate/pitch default to the
+ * parent zone's chosen voice style (energetic by default); pass either to
+ * override for a specific line.
  */
-export function speak(text, { rate = 0.92, pitch = 1.15, force = false } = {}) {
+export function speak(text, { rate, pitch, force = false } = {}) {
   if (!text) return;
   if (!force && !settings().voice) return;
   if (!('speechSynthesis' in window)) return;
   try {
     speechSynthesis.cancel();
     if (!voicesReady) voice = pickVoice();
+    const style = VOICE_STYLES[settings().voiceStyle] || VOICE_STYLES.energetic;
+    const effectiveRate = rate ?? style.rate;
+    const effectivePitch = pitch ?? style.pitch;
     duckMusic(Math.min(6, 1 + String(text).length / 12));
     // Chrome can drop an utterance queued in the same tick as cancel() — a
     // beat later is enough for the cancel to actually flush first.
-    setTimeout(() => fireUtterance(text, { rate, pitch, useVoice: true, retryOnError: true }), 30);
+    setTimeout(
+      () => fireUtterance(text, { rate: effectiveRate, pitch: effectivePitch, useVoice: true, retryOnError: true }),
+      30,
+    );
   } catch {
     /* Speech is a progressive enhancement; silence is an acceptable fallback. */
+  }
+}
+
+const PREVIEW_LINE = 'Woohoo! Let’s find the shapes together!';
+
+/**
+ * Speak a sample line with a specific voice + style, without touching the
+ * saved settings — used by the parent zone's picker so a voice/style can be
+ * auditioned before committing to it.
+ */
+export function previewVoice(voiceURI, styleKey) {
+  if (!('speechSynthesis' in window)) return;
+  const available = speechSynthesis.getVoices();
+  const previewed = voiceURI ? available.find((v) => v.voiceURI === voiceURI) : voice;
+  const style = VOICE_STYLES[styleKey] || VOICE_STYLES.energetic;
+  try {
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(PREVIEW_LINE);
+    if (previewed) {
+      utter.voice = previewed;
+      utter.lang = previewed.lang;
+    }
+    utter.rate = style.rate;
+    utter.pitch = style.pitch;
+    utter.volume = 1;
+    setTimeout(() => {
+      speechSynthesis.speak(utter);
+      if (!IS_ANDROID) {
+        speechSynthesis.pause();
+        speechSynthesis.resume();
+      }
+    }, 30);
+  } catch {
+    /* Preview is best-effort. */
   }
 }
 

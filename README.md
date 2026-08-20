@@ -162,6 +162,20 @@ spying on `speechSynthesis.speak` and asserts each one fires — including that
 voice-picking itself never throws when a device (or this project's CI
 sandbox) reports zero installed voices.
 
+The parent zone's **Voice** section lets a grown-up override both halves of
+this: a **style** (Calm / Cheerful / Energetic — rate+pitch presets in
+`VOICE_STYLES`, `src/core/audio.js`; Energetic is the default) and a specific
+**voice** picked from the device's own installed list, with a ▶ button to
+preview each one before committing. "Auto (recommended)" — the scored
+`pickVoice()` behaviour above — is always the first option. Both choices
+persist in `settings()` (`voiceStyle`, `voiceURI`) and apply to every spoken
+line in the app immediately, no reload needed.
+
+A **"🔎 Test voice (debug)"** button next to it speaks a fixed test line and
+reports installed voice count, the picked voice, and whether the utterance
+actually started/ended/errored — useful for root-causing a silent-voice
+report on a real device without needing devtools access.
+
 ---
 
 ## How it is built
