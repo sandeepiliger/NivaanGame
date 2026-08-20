@@ -14,8 +14,8 @@ import { isUnlocked } from './map.js';
 import { infoDialog } from './dialogs.js';
 
 const PRAISE_BY_STARS = {
-  3: ['Perfect!', 'Amazing work!', 'You are a star!'],
-  2: ['Great job!', 'Well done!', 'Nearly perfect!'],
+  3: ['Perfect!', 'Amazing work!', 'You are a star!', 'Excellent!'],
+  2: ['Great job!', 'Well done!', 'Nearly perfect!', 'Very good!'],
   1: ['Good try!', 'You did it!', 'Keep going!'],
 };
 

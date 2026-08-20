@@ -697,6 +697,35 @@ export function unlockVoice() {
   }
 }
 
+/** True once a `speak()` call has actually reported an error for this utterance batch. */
+function fireUtterance(text, { rate, pitch, useVoice, retryOnError }) {
+  const utter = new SpeechSynthesisUtterance(String(text));
+  if (useVoice && voice) {
+    utter.voice = voice;
+    utter.lang = voice.lang;
+  }
+  utter.rate = rate;
+  utter.pitch = pitch;
+  utter.volume = 1;
+  utter.onerror = (e) => {
+    // 'canceled'/'interrupted' just means a newer prompt cut this one off —
+    // not a real failure. Anything else (voice engine missing, network voice
+    // that failed to fetch its audio, …) is worth one retry on the device's
+    // plain default voice, which is far more likely to be installed locally
+    // than a fancier accented one.
+    if (retryOnError && e.error !== 'canceled' && e.error !== 'interrupted') {
+      console.warn('[audio] speech failed, retrying on the default voice:', e.error);
+      fireUtterance(text, { rate, pitch, useVoice: false, retryOnError: false });
+    }
+  };
+  speechSynthesis.speak(utter);
+  // Chrome (desktop and Android) has a long-standing bug where an utterance
+  // can be queued in a paused state and never actually start; nudging pause
+  // then resume immediately after speak() is the standard workaround.
+  speechSynthesis.pause();
+  speechSynthesis.resume();
+}
+
 /**
  * Speak a prompt aloud. Cancels anything already speaking so prompts never
  * queue up and lag behind the child's taps.
@@ -707,22 +736,11 @@ export function speak(text, { rate = 0.92, pitch = 1.15, force = false } = {}) {
   if (!('speechSynthesis' in window)) return;
   try {
     speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(String(text));
     if (!voicesReady) voice = pickVoice();
-    if (voice) {
-      utter.voice = voice;
-      utter.lang = voice.lang;
-    }
-    utter.rate = rate;
-    utter.pitch = pitch;
-    utter.volume = 1;
     duckMusic(Math.min(6, 1 + String(text).length / 12));
-    speechSynthesis.speak(utter);
-    // Chrome (desktop and Android) has a long-standing bug where an utterance
-    // can be queued in a paused state and never actually start; nudging pause
-    // then resume immediately after speak() is the standard workaround.
-    speechSynthesis.pause();
-    speechSynthesis.resume();
+    // Chrome can drop an utterance queued in the same tick as cancel() — a
+    // beat later is enough for the cancel to actually flush first.
+    setTimeout(() => fireUtterance(text, { rate, pitch, useVoice: true, retryOnError: true }), 30);
   } catch {
     /* Speech is a progressive enhancement; silence is an acceptable fallback. */
   }

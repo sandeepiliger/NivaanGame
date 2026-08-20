@@ -272,6 +272,7 @@ export const ANIMAL_FOOD = [
 export const TODDLER_PRAISE = [
   'Yay!', 'Woohoo!', 'You did it!', 'Clever you!', 'Hooray!',
   'Good job!', 'Wow!', 'Yes!', 'Amazing!', 'High five!',
+  'Excellent!', 'Very good!',
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -290,6 +291,7 @@ export const numberWord = (n) => NUMBER_WORDS[n] ?? String(n);
 export const PRAISE = [
   'Great job!', 'Well done!', 'You got it!', 'Awesome!', 'Perfect!',
   'Nice work!', 'Brilliant!', 'Super!', 'Fantastic!', 'Way to go!',
+  'Excellent!', 'Very good!',
 ];
 
 /** Gentle nudges after a wrong answer — never negative. */
