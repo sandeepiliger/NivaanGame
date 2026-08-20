@@ -688,16 +688,30 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
  * prompt), which on several mobile browsers is no longer close enough to a
  * genuine user gesture for `speechSynthesis.speak()` to actually produce
  * sound — the call succeeds silently, with no error to catch. Speaking one
- * silent utterance from directly inside the *first* real tap keeps the
- * engine "open" for every later, gesture-less call on the same page.
+ * utterance from directly inside the *first* real tap keeps the engine
+ * "open" for every later, gesture-less call on the same page.
+ *
+ * That utterance has to have real text and a non-zero volume. A genuinely
+ * blank one (whitespace-only text, volume 0 — what this used to send) is a
+ * no-op on some Android TTS bridges: it never actually engages the engine,
+ * so every later automatic prompt stays silent until something *real* gets
+ * spoken — confirmed on a real device where a proper test utterance fixed
+ * voice for the rest of the session, but this silent one never did. Keeping
+ * the volume very low (rather than 0) still makes it a genuine utterance
+ * while staying essentially inaudible on the very first tap.
  */
 let voiceUnlocked = false;
 export function unlockVoice() {
   if (voiceUnlocked || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   voiceUnlocked = true;
   try {
-    const warm = new SpeechSynthesisUtterance(' ');
-    warm.volume = 0;
+    const warm = new SpeechSynthesisUtterance('Hi');
+    warm.volume = 0.01;
+    if (!voicesReady) voice = pickVoice();
+    if (voice) {
+      warm.voice = voice;
+      warm.lang = voice.lang;
+    }
     speechSynthesis.speak(warm);
   } catch {
     /* best-effort — a failed warm-up just means speak() falls back silently */

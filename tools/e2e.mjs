@@ -587,7 +587,10 @@ console.log('\nvoice coverage');
 
   await freshPage.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
   await freshPage.waitForTimeout(300);
-  const isWarmUp = (u) => u.volume === 0 && u.text.trim() === '';
+  // Must be real, non-blank text at a non-zero volume — a whitespace-only,
+  // fully-silent utterance is a no-op on some Android TTS bridges and never
+  // actually engages the engine (see unlockVoice() in audio.js).
+  const isWarmUp = (u) => u.volume > 0 && u.volume < 0.1 && u.text.trim() !== '';
   let ok = true;
 
   const beforeTap = await freshSpoken();
