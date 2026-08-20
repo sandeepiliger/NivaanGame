@@ -293,6 +293,11 @@ export function playScreen(params) {
   return {
     el,
     onEnter() {
+      // NOT unlockVoice() here: reaching this screen via a deep link (no
+      // prior tap) would consume the one-shot warm-up without a real
+      // gesture behind it. main.js's global first-gesture listener is the
+      // only place that call belongs; reaching Play normally (tapping a
+      // level) already triggers that listener before this ever runs.
       unlockAudio();
       startPlayClock();
       renderRound();

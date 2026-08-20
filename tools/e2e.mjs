@@ -506,6 +506,75 @@ console.log('\nvoice coverage');
 }
 
 {
+  // Regression test: the voice "warm-up" (see unlockVoice() in audio.js) must
+  // fire on the very first real tap and never before it. Firing early (e.g.
+  // from a screen's onEnter, which can run on cold boot with no gesture yet)
+  // would consume the one-shot warm-up without a real gesture behind it — on
+  // several mobile browsers that silently breaks every *later* automatic
+  // prompt too, since speechSynthesis never actually gets "unlocked".
+  //
+  // This needs a genuinely fresh page: `voiceUnlocked` is one-shot module
+  // state, and by this point in the suite the shared `page` has already
+  // fired plenty of real clicks. Navigating the shared page back to the same
+  // origin+path with only the hash changed is also not reliable here — the
+  // browser can treat that as a same-document navigation and skip reloading
+  // the module entirely, silently reusing old state (this is exactly the
+  // false failure this test hit before switching to its own page).
+  const freshPage = await context.newPage();
+  freshPage.on('pageerror', (e) => fail(`pageerror (voice warm-up check): ${e.message}`));
+  freshPage.on('console', (m) => m.type() === 'error' && fail(`console (voice warm-up check): ${m.text()}`));
+  await freshPage.addInitScript(() => {
+    window.__spoken = [];
+    const realSpeak = window.speechSynthesis?.speak?.bind(window.speechSynthesis);
+    if (window.speechSynthesis) {
+      window.speechSynthesis.speak = (utter) => {
+        window.__spoken.push({ text: utter.text, volume: utter.volume });
+        try {
+          realSpeak(utter);
+        } catch {
+          /* no real TTS backend in this sandbox — that's fine */
+        }
+      };
+    }
+  });
+  const freshSpoken = () => freshPage.evaluate(() => window.__spoken.slice());
+
+  await freshPage.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
+  await freshPage.waitForTimeout(300);
+  const isWarmUp = (u) => u.volume === 0 && u.text.trim() === '';
+  let ok = true;
+
+  const beforeTap = await freshSpoken();
+  if (beforeTap.some(isWarmUp)) {
+    fail('voice warm-up fired before any tap');
+    ok = false;
+  }
+
+  await freshPage.mouse.move(195, 400);
+  await freshPage.mouse.down();
+  await freshPage.mouse.up();
+  await freshPage.waitForTimeout(150);
+  const afterOneTap = await freshSpoken();
+  if (!afterOneTap.some(isWarmUp)) {
+    fail('voice warm-up did not fire on the first tap');
+    ok = false;
+  }
+
+  await freshPage.mouse.move(195, 420);
+  await freshPage.mouse.down();
+  await freshPage.mouse.up();
+  await freshPage.waitForTimeout(150);
+  const afterTwoTaps = await freshSpoken();
+  if (afterTwoTaps.filter(isWarmUp).length > 1) {
+    fail('voice warm-up fired more than once');
+    ok = false;
+  }
+
+  await freshPage.close();
+  if (ok) console.log('  ✓ voice warm-up fires exactly once, on the first real tap');
+}
+
+{
   // Landing on a world map reads out which world it is — the level list below
   // it is plain text a pre-reader can't use on their own.
   await clearSpoken();

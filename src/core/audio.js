@@ -674,6 +674,30 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
 }
 
 /**
+ * "Warms up" the speech engine inside a real tap.
+ *
+ * Most puzzle prompts are spoken automatically a moment *after* the child's
+ * last tap (once a round finishes, `nextRound()` waits ~900ms before the next
+ * prompt), which on several mobile browsers is no longer close enough to a
+ * genuine user gesture for `speechSynthesis.speak()` to actually produce
+ * sound — the call succeeds silently, with no error to catch. Speaking one
+ * silent utterance from directly inside the *first* real tap keeps the
+ * engine "open" for every later, gesture-less call on the same page.
+ */
+let voiceUnlocked = false;
+export function unlockVoice() {
+  if (voiceUnlocked || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  voiceUnlocked = true;
+  try {
+    const warm = new SpeechSynthesisUtterance(' ');
+    warm.volume = 0;
+    speechSynthesis.speak(warm);
+  } catch {
+    /* best-effort — a failed warm-up just means speak() falls back silently */
+  }
+}
+
+/**
  * Speak a prompt aloud. Cancels anything already speaking so prompts never
  * queue up and lag behind the child's taps.
  */
@@ -694,6 +718,11 @@ export function speak(text, { rate = 0.92, pitch = 1.15, force = false } = {}) {
     utter.volume = 1;
     duckMusic(Math.min(6, 1 + String(text).length / 12));
     speechSynthesis.speak(utter);
+    // Chrome (desktop and Android) has a long-standing bug where an utterance
+    // can be queued in a paused state and never actually start; nudging pause
+    // then resume immediately after speak() is the standard workaround.
+    speechSynthesis.pause();
+    speechSynthesis.resume();
   } catch {
     /* Speech is a progressive enhancement; silence is an acceptable fallback. */
   }

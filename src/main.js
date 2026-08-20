@@ -3,7 +3,7 @@
  */
 
 import { defineRoute, start } from './core/router.js';
-import { unlockAudio, syncMusic, stopMusic, shutUp, sfx, haptic } from './core/audio.js';
+import { unlockAudio, unlockVoice, syncMusic, stopMusic, shutUp, sfx, haptic } from './core/audio.js';
 import { startPlayClock } from './core/store.js';
 
 import { homeScreen } from './screens/home.js';
@@ -27,8 +27,15 @@ defineRoute('profiles', profilesScreen);
 /* -------------------------------------------------------------------------- */
 
 // Browsers block audio until the first gesture; unlock on whichever comes first.
+// Voice needs the same treatment: several mobile browsers only let
+// speechSynthesis produce sound once it's been used inside a real tap, so a
+// prompt spoken automatically a moment *after* the child's last tap (e.g. the
+// next round, ~900ms after "Correct!") can otherwise stay silent with no
+// error — warming it up here, on the very first tap anywhere, fixes that for
+// every later automatic prompt on the page.
 const firstGesture = () => {
   unlockAudio();
+  unlockVoice();
   syncMusic();
   startPlayClock();
   window.removeEventListener('pointerdown', firstGesture);

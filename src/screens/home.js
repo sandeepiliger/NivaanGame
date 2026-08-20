@@ -8,7 +8,7 @@ import { CATEGORIES, levelsFor, totalLevels } from '../data/catalog.js';
 import { profile, totalStars, completedCount, starsFor, settings, setSetting } from '../core/store.js';
 import { MASCOT_LINES } from '../data/content.js';
 import { mascot, speechBubble } from '../ui/mascot.js';
-import { sfx, speak, unlockAudio, syncMusic } from '../core/audio.js';
+import { sfx, speak, unlockAudio, unlockVoice, syncMusic } from '../core/audio.js';
 import { parentGate } from './dialogs.js';
 
 export function homeScreen() {
@@ -108,6 +108,9 @@ export function homeScreen() {
   return {
     el,
     onEnter() {
+      // NOT unlockVoice() here: this fires on cold boot too, before any real
+      // tap — see the warm-up note in main.js's first-gesture listener, which
+      // is the one place this must run.
       unlockAudio();
       syncMusic();
       speak(line);
@@ -136,6 +139,7 @@ function soundToggle() {
   };
   btn.addEventListener('click', () => {
     unlockAudio();
+    unlockVoice();
     setSetting('sound', !settings().sound);
     paint();
     syncMusic();
