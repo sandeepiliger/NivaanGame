@@ -207,6 +207,9 @@ export function playScreen(params) {
 
   function offerReveal() {
     if (document.querySelector('.play__reveal')) return;
+    // A pre-reader can't decode "Show me" on the button, so say what it does
+    // the moment it appears.
+    speak('If you tap the eye, I will show you the answer!');
     const btn = h(
       'button.btn.btn--paper.play__reveal',
       {
@@ -252,6 +255,9 @@ export function playScreen(params) {
         text: 'Your stars for this level will not be saved.',
         confirmLabel: 'Leave',
         cancelLabel: 'Keep playing',
+        // A child hitting the back button unassisted can't read this dialog,
+        // so say both choices aloud as soon as it opens.
+        speak: 'Do you want to leave? Your stars will not be saved. Or tap Keep Playing to stay!',
         onConfirm: () => (category ? go('map', { cat: category.id }) : go('home')),
       });
     });

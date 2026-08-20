@@ -136,7 +136,15 @@ export function mapScreen(params) {
     ),
   );
 
-  return { el };
+  return {
+    el,
+    // The level names on this screen are plain text a pre-reader can't use,
+    // so say which world they've landed in — the same pattern Home uses for
+    // its mascot line. Tapping a level then speaks that puzzle's own prompt.
+    onEnter() {
+      speak(`${category.name}! ${category.tagline}`);
+    },
+  };
 }
 
 function tierName(tier) {

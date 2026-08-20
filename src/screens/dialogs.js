@@ -41,7 +41,11 @@ export function confirmDialog({
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
+  // Pre-readers can't parse a dialog's title/body text on their own, so any
+  // dialog a child (rather than a parent) might hit passes what to say aloud.
+  speak: speakText,
 }) {
+  if (speakText) speak(speakText);
   const { close } = openModal([
     h('div.modal__emoji', '🤔'),
     h('h2.modal__title', title),
@@ -74,7 +78,15 @@ export function confirmDialog({
   ]);
 }
 
-export function infoDialog({ emoji = '🎉', title, text, actionLabel = 'OK', onAction }) {
+export function infoDialog({
+  emoji = '🎉',
+  title,
+  text,
+  actionLabel = 'OK',
+  onAction,
+  speak: speakText,
+}) {
+  if (speakText) speak(speakText);
   const { close } = openModal([
     h('div.modal__emoji', emoji),
     h('h2.modal__title', title),

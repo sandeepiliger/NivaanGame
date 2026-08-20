@@ -630,6 +630,16 @@ export function duckMusic(seconds = 1.6) {
 let voice = null;
 let voicesReady = false;
 
+// Names commonly used for Indian-English voices across platforms (Windows'
+// Heera/Ravi, macOS/iOS's Rishi/Sangeeta, and Android/Chrome's network voices,
+// which are often just labelled "English (India)").
+const INDIAN_VOICE_NAME_RE = /india|heera|ravi|rishi|sangeeta|veena/i;
+
+function isIndianEnglish(v) {
+  const vl = (v.lang || '').toLowerCase().replace('_', '-');
+  return vl === 'en-in' || (vl.startsWith('en') && INDIAN_VOICE_NAME_RE.test(v.name || ''));
+}
+
 function pickVoice() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
   const available = speechSynthesis.getVoices();
@@ -638,10 +648,13 @@ function pickVoice() {
 
   const lang = (navigator.language || 'en-US').toLowerCase();
   const base = lang.split('-')[0];
-  // Prefer a warm, female or child-friendly voice in the user's language.
+  // The house voice is Indian-accented English; everything else is a graceful
+  // fallback for devices that don't happen to ship one, scored by how well it
+  // still matches the device's own language and by a warm, kid-friendly tone.
   const score = (v) => {
     let s = 0;
-    const vl = (v.lang || '').toLowerCase();
+    const vl = (v.lang || '').toLowerCase().replace('_', '-');
+    if (isIndianEnglish(v)) s += 100;
     if (vl === lang) s += 10;
     else if (vl.startsWith(base)) s += 6;
     if (/female|samantha|karen|zira|google us english|aria|ava|kids|child/i.test(v.name)) s += 4;

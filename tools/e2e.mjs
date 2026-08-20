@@ -46,6 +46,27 @@ const page = await context.newPage();
 page.on('pageerror', (e) => fail(`pageerror: ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && fail(`console: ${m.text()}`));
 
+// Spy on speechSynthesis.speak so the voice-coverage checks can see every
+// utterance the app tries to say, without depending on real TTS output — CI
+// sandboxes typically report zero installed voices, which is exactly the
+// graceful-fallback path this is meant to exercise.
+await page.addInitScript(() => {
+  window.__spoken = [];
+  const realSpeak = window.speechSynthesis?.speak?.bind(window.speechSynthesis);
+  if (window.speechSynthesis) {
+    window.speechSynthesis.speak = (utter) => {
+      window.__spoken.push(utter.text);
+      try {
+        realSpeak(utter);
+      } catch {
+        /* no real TTS backend in this sandbox — that's fine */
+      }
+    };
+  }
+});
+const spoken = () => page.evaluate(() => window.__spoken.slice());
+const clearSpoken = () => page.evaluate(() => void (window.__spoken.length = 0));
+
 const shot = (name) => (SHOTS ? page.screenshot({ path: SHOT_DIR + name + '.png' }) : Promise.resolve());
 const roundsDone = () => page.evaluate(() => document.querySelectorAll('.play__pip--done').length);
 
@@ -464,7 +485,80 @@ console.log('\ntoddler world');
 }
 
 /* -------------------------------------------------------------------------- */
-/* 6. Sound                                                                    */
+/* 6. Voice coverage                                                           */
+/*                                                                              */
+/* A pre-reader can't use a screen full of text on their own, so every place a */
+/* child (not a parent) might land alone must say what's on it out loud — not  */
+/* just the puzzle prompt, but menus and popups too.                           */
+/* -------------------------------------------------------------------------- */
+
+console.log('\nvoice coverage');
+
+{
+  // pickVoice() must not throw when the device has zero installed voices —
+  // the normal case here, and the fallback path real low-end phones can hit.
+  await page.goto(`${BASE}/index.html`);
+  await page.waitForTimeout(300);
+  const voiceCount = await page.evaluate(() => window.speechSynthesis?.getVoices().length ?? -1);
+  const homeSpoken = await spoken();
+  console.log(`  ✓ voice picking is safe with ${voiceCount} installed voices`);
+  if (!homeSpoken.length) fail('home screen did not speak its mascot line');
+}
+
+{
+  // Landing on a world map reads out which world it is — the level list below
+  // it is plain text a pre-reader can't use on their own.
+  await clearSpoken();
+  await page.goto(`${BASE}/index.html#/map?cat=toddler`);
+  await page.waitForTimeout(300);
+  const mapSpoken = await spoken();
+  if (!mapSpoken.some((t) => t.includes('Little Ones'))) fail('map screen did not announce the world name');
+  else console.log('  ✓ the world map announces which world you are in');
+}
+
+{
+  // The exit-confirmation dialog only appears once a round is behind you —
+  // finish one round of a choice puzzle, then hit back.
+  await page.goto(`${BASE}/index.html#/play?level=numbers-0`);
+  await page.waitForTimeout(400);
+  const puzzle = await firstPuzzle('numbers-0');
+  await page.click(`.opt[data-id="${puzzle.answer}"]`);
+  await page.waitForTimeout(1150);
+  await clearSpoken();
+  await page.click('.topbar .iconbtn[aria-label="Back"]');
+  await page.waitForTimeout(300);
+  const exitSpoken = await spoken();
+  if (!exitSpoken.some((t) => t.toLowerCase().includes('leave'))) {
+    fail('exit-confirm dialog did not speak its choices');
+  } else {
+    console.log('  ✓ the "leave the game?" dialog speaks both choices');
+  }
+  await page.click('button.btn.btn--paper:has-text("Keep playing")');
+  await page.waitForTimeout(200);
+}
+
+{
+  // The "Show me" button is another piece of text a pre-reader can't decode —
+  // it should say what tapping it does the moment it appears.
+  await page.goto(`${BASE}/index.html#/play?level=colors-0`);
+  await page.waitForTimeout(400);
+  const puzzle = await firstPuzzle('colors-0');
+  const wrong = puzzle.options.filter((o) => o.id !== puzzle.answer).map((o) => o.id);
+  await clearSpoken();
+  for (let i = 0; i < 3; i++) {
+    await page.click(`.opt[data-id="${wrong[i % wrong.length]}"]`);
+    await page.waitForTimeout(230);
+  }
+  const revealSpoken = await spoken();
+  if (!revealSpoken.some((t) => t.toLowerCase().includes('eye'))) {
+    fail('"Show me" button appeared without speaking its cue');
+  } else {
+    console.log('  ✓ the "Show me" button speaks a cue as soon as it appears');
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. Sound                                                                    */
 /* -------------------------------------------------------------------------- */
 
 console.log('\nsound');
@@ -510,7 +604,7 @@ console.log('\nsound');
 }
 
 /* -------------------------------------------------------------------------- */
-/* 7. The "Show me" escape hatch                                               */
+/* 8. The "Show me" escape hatch                                               */
 /* -------------------------------------------------------------------------- */
 
 console.log('\nhelp');

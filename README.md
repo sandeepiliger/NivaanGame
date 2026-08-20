@@ -75,8 +75,12 @@ children are not reliable draggers.
 
 ### Features
 
-- **Spoken instructions** for every prompt (Web Speech API) — the game is
-  playable before a child can read.
+- **Spoken instructions everywhere a child plays alone** (Web Speech API) — not
+  just puzzle prompts, but the world map ("Little Ones! First games for
+  toddlers"), the exit-confirmation dialog, and the *Show me* button's cue —
+  anywhere pre-readers would otherwise face text they can't use. Prefers an
+  Indian-accented English voice (`en-IN`) when the device has one installed,
+  with a graceful fallback to whatever's next best otherwise.
 - **A full synthesised soundtrack**: 31 distinct effects, all generated at
   runtime — see [Sound](#sound) below.
 - **Progressive hints**: a 💡 button that eliminates a wrong option or shows the
@@ -130,6 +134,33 @@ opt out with `data-quiet` and make their own, more specific noise — a card
 toddler world gets a softer one that lilts back upward.
 
 Sound, music, voice and vibration each have their own switch in the parent zone.
+
+### Voice
+
+Spoken prompts use the browser's own text-to-speech (`speechSynthesis`), so
+there is nothing to download and it works in whatever languages the device
+already has installed. `pickVoice()` in `src/core/audio.js` scores every
+installed voice and picks the best one:
+
+1. an **Indian-accented English voice** (`en-IN`, or a name flagged by the
+   platform as an India voice — Windows' Heera/Ravi, macOS/iOS's Rishi/
+   Sangeeta, Android's network "English (India)" voices) always wins first;
+2. failing that, whatever best matches the device's own language;
+3. failing that, a warm, kid-friendly-sounding voice, then a local (offline)
+   one.
+
+Wording stays plain English throughout — this changes the *accent*, not the
+words. A device with no Indian voice installed just falls through to step 2
+with no visible difference in behaviour.
+
+Coverage was widened at the same time, since a pre-reader can't parse a
+screen's text on their own: beyond every puzzle prompt, the world map now
+announces which world you're in on entry, the exit-confirmation dialog speaks
+both choices, and the *Show me* button says what tapping it does the moment it
+appears. `npm run e2e`'s "voice coverage" section drives all four of these by
+spying on `speechSynthesis.speak` and asserts each one fires — including that
+voice-picking itself never throws when a device (or this project's CI
+sandbox) reports zero installed voices.
 
 ---
 
