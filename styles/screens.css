@@ -525,16 +525,17 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  /* Anchored a short, deliberate distance below the prompt rather than
-     centred in the whole grown area — short content (e.g. two or three
-     option buttons) centred in a tall phone screen leaves a large, awkward
-     void between the question and its answers. This keeps that gap small
-     and fixed instead, while a board big enough to fill the space on its
-     own (maze, sudoku, …) looks identical either way. */
-  justify-content: flex-start;
-  gap: 12px;
+  /* Centred so the playfield sits in the thumb zone rather than drifting to
+     the top of a tall phone screen. `safe` falls back to top-alignment when
+     the content is taller than the viewport, so nothing is ever clipped out
+     of reach above the scroll origin. Short content (e.g. a few option
+     buttons) now has generously-sized touch targets (see .opt, .stem) so
+     this reads as a deliberately-centred block rather than a few small
+     buttons adrift in empty space. */
+  justify-content: safe center;
+  gap: 16px;
   min-height: 0;
-  padding: clamp(12px, 5vh, 44px) var(--pad) calc(14px + var(--sab));
+  padding: 4px var(--pad) calc(14px + var(--sab));
   overflow-y: auto;
   overscroll-behavior: contain;
 }

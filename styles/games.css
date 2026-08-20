@@ -269,7 +269,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 84px;
+  min-height: clamp(84px, 20vh, 168px);
   padding: 12px;
   border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.96);
@@ -278,7 +278,7 @@
 }
 
 .stem--sm {
-  min-height: 64px;
+  min-height: clamp(64px, 14vh, 120px);
   padding: 8px;
 }
 
@@ -298,7 +298,7 @@
   flex: 0 1 auto;
   display: grid;
   grid-template-columns: repeat(var(--cols, 2), 1fr);
-  gap: 10px;
+  gap: 14px;
   align-content: center;
   min-height: 0;
 }
@@ -310,7 +310,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 74px;
+  min-height: clamp(80px, 15vh, 140px);
   padding: 10px;
   border-radius: var(--r-lg);
   background: #fff;
