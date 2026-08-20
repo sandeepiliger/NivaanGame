@@ -630,6 +630,13 @@ export function duckMusic(seconds = 1.6) {
 let voice = null;
 let voicesReady = false;
 
+// The pause()/resume() nudge below fixes a *desktop* Chrome/ChromeOS bug
+// (an utterance stuck queued-but-never-started). On Android Chrome it does
+// the opposite: pause() there can leave a perfectly good utterance stuck
+// paused, because resume() doesn't reliably un-pause it — producing exactly
+// "music plays, voice never does". So it must never run on Android.
+const IS_ANDROID = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '');
+
 // Names commonly used for Indian-English voices across platforms (Windows'
 // Heera/Ravi, macOS/iOS's Rishi/Sangeeta, and Android/Chrome's network voices,
 // which are often just labelled "English (India)").
@@ -719,11 +726,14 @@ function fireUtterance(text, { rate, pitch, useVoice, retryOnError }) {
     }
   };
   speechSynthesis.speak(utter);
-  // Chrome (desktop and Android) has a long-standing bug where an utterance
-  // can be queued in a paused state and never actually start; nudging pause
-  // then resume immediately after speak() is the standard workaround.
-  speechSynthesis.pause();
-  speechSynthesis.resume();
+  if (!IS_ANDROID) {
+    // Desktop Chrome/ChromeOS-only bug: an utterance can be queued in a
+    // paused state and never actually start; nudging pause then resume
+    // immediately after speak() is the standard workaround. See IS_ANDROID
+    // above for why this must not run on Android.
+    speechSynthesis.pause();
+    speechSynthesis.resume();
+  }
 }
 
 /**

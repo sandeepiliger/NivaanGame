@@ -506,6 +506,52 @@ console.log('\nvoice coverage');
 }
 
 {
+  // Regression test: the desktop-only pause()/resume() "stuck utterance"
+  // nudge must never fire on Android — on that platform it can leave a
+  // perfectly good utterance stuck *paused* instead of unsticking it,
+  // producing exactly "music plays, voice never does". Needs a real Android
+  // UA, so this gets its own context rather than the shared mobile-viewport
+  // page (which still reports a desktop Chrome UA under viewport emulation).
+  const androidCtx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+  });
+  const androidPage = await androidCtx.newPage();
+  androidPage.on('pageerror', (e) => fail(`pageerror (Android voice check): ${e.message}`));
+  androidPage.on('console', (m) => m.type() === 'error' && fail(`console (Android voice check): ${m.text()}`));
+  await androidPage.addInitScript(() => {
+    window.__nudges = 0;
+    const s = window.speechSynthesis;
+    if (s) {
+      const realPause = s.pause?.bind(s);
+      const realResume = s.resume?.bind(s);
+      s.pause = (...a) => {
+        window.__nudges++;
+        return realPause?.(...a);
+      };
+      s.resume = (...a) => {
+        window.__nudges++;
+        return realResume?.(...a);
+      };
+    }
+  });
+  await androidPage.goto(`${BASE}/index.html#/play?level=numbers-0`, { waitUntil: 'networkidle' });
+  await androidPage.waitForTimeout(500);
+  const androidNudges = await androidPage.evaluate(() => window.__nudges);
+  await androidCtx.close();
+  if (androidNudges > 0) {
+    fail(
+      `speak() called the desktop-only pause/resume nudge on Android (${androidNudges}× — this can leave real speech stuck paused)`,
+    );
+  } else {
+    console.log('  ✓ speak() skips the pause/resume nudge on Android');
+  }
+}
+
+{
   // Regression test: the voice "warm-up" (see unlockVoice() in audio.js) must
   // fire on the very first real tap and never before it. Firing early (e.g.
   // from a screen's onEnter, which can run on cold boot with no gesture yet)
