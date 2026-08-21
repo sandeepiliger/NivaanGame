@@ -7,9 +7,10 @@ name: Android Build
 # so this workflow is the actual build verification for the native app.
 #
 # The Android SDK is set up with plain shell commands rather than a
-# marketplace action — some org policies only allow actions from GitHub
-# itself, and a third-party action reference then fails the whole run
-# before any job is even created.
+# marketplace action, to keep this runnable under a "GitHub actions only"
+# policy. If runs still fail instantly with zero jobs and no logs, check
+# Settings → Actions → General → Workflow permissions — it needs to be
+# "Read and write permissions" for new workflows to be allowed to start.
 
 on:
   push:

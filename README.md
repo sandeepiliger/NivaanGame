@@ -293,30 +293,40 @@ wire into CI either way.
 
 ## Shipping as a native app
 
-The app is a self-contained static site, so packaging is mechanical:
+The Android wrapper (Capacitor) is already set up — `capacitor.config.json`
+plus `tools/build-www.mjs` stage this same static site into `www/` with no
+bundler, and `npx cap add android` generates the native project from that.
+`android/` and `www/` are both git-ignored and fully regenerated on demand,
+same as any other build output:
 
 ```bash
-npm i -D @capacitor/cli @capacitor/core @capacitor/android @capacitor/ios
-npx cap init "Nivaan Learning Games" ai.32labs.nivaan --web-dir .
-npx cap add android          # and/or: npx cap add ios
-npx cap sync
-npx cap open android
+npm run android:sync    # stage www/, regenerate android/, patch AdMob's manifest entry
+npx cap add android      # first time only, if android/ doesn't exist yet
 ```
 
-`assets/icon.svg` is the source for the launcher icon; export it at 192/512/1024
-px (and a maskable 512) into `assets/` to complete the manifest entries.
-
-For the Play Store, the alternative is a **Trusted Web Activity** via
-[Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap), which wraps the
-hosted PWA with no code changes at all.
+**See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full, step-by-step guide** to
+the accounts and one-time setup only a real developer identity can do:
+Google Play Console registration, a Firebase project (for Analytics), an
+AdMob account (for ads), a signing keystore, and the Play Console listing
+itself (Data Safety form, target audience, the "Remove Ads" in-app
+product). `.github/workflows/android-build.yml` builds the actual AAB/APK
+on GitHub's own runners once those are in place.
 
 ---
 
 ## Privacy
 
-There is no analytics, no advertising, no account and no network request of any
-kind. Progress lives in `localStorage` on the device and can be exported or
-erased from the parent zone.
+There is no account and no server of this app's own — progress lives in
+`localStorage` on the device and can be exported or erased from the parent
+zone at any time.
+
+The native Android build does talk to two Google services, both configured
+specifically for a children's app (see `src/core/analytics.js` and
+`src/core/ads.js`): Firebase Analytics (gameplay events like level
+completions — no personal data), and AdMob (non-personalized,
+child-directed ads only — `tagForChildDirectedTreatment`,
+`tagForUnderAgeOfConsent`, `maxAdContentRating: General` on every ad
+request). Neither runs on the plain web build.
 
 ---
 
