@@ -5,6 +5,17 @@ Everything code-side is done: the Android wrapper, Firebase Analytics, AdMob
 left are the accounts and one-time setup steps only you can do — Google
 requires the actual developer identity, not an AI session's.
 
+## Try it right now
+
+The [Android Build workflow](../../actions/workflows/android-build.yml)
+already builds a working, installable **debug APK** on every push to
+`main` — no account setup needed for this part. Open the latest successful
+run, scroll to **Artifacts**, download `nivaan-debug-apk`, and sideload it
+onto an Android phone (unzip it first, then open the `.apk`; you'll need to
+allow "install from this source" once). This is the real native app,
+running the real game — a good sanity check before doing any of the
+account setup below.
+
 ## 1. Google Play Console
 
 Register at [play.google.com/console](https://play.google.com/console) —
