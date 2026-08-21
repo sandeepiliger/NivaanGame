@@ -10,13 +10,12 @@
 
 import { settings } from './store.js';
 
-// Google's official *test* ad unit IDs — safe to ship as-is, they only ever
-// serve clearly-labelled test creatives and can't earn (or cost) real
-// money. Replace with your own AdMob account's ad unit IDs before a
-// production release; see DEPLOYMENT.md.
-const BANNER_AD_ID = 'ca-app-pub-3940256099942544/6300978111';
-const INTERSTITIAL_AD_ID = 'ca-app-pub-3940256099942544/1033173712';
-const USING_TEST_ADS = true;
+// Real AdMob ad units (account "nivaangame"). AdMob's own review can take
+// a few days after first traffic before non-test ads actually start
+// serving — see DEPLOYMENT.md.
+const BANNER_AD_ID = 'ca-app-pub-4919382081912971/3590456253';
+const INTERSTITIAL_AD_ID = 'ca-app-pub-4919382081912971/9964292912';
+const USING_TEST_ADS = false;
 
 function admob() {
   return typeof window !== 'undefined' ? window.Capacitor?.Plugins?.AdMob : null;
