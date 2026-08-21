@@ -25,30 +25,39 @@ function adsAllowed() {
   return Boolean(admob()) && !settings().adsRemoved;
 }
 
-let initialized = false;
+// Unlike Web Audio/speechSynthesis, AdMob's plugin has no browser-gesture
+// unlock requirement, so this runs unconditionally at boot (see main.js).
+// showHomeBanner()/prepareInterstitial() await this promise before touching
+// the plugin — calling AdMob.showBanner() before initialize() has completed
+// crashes natively (its ad container view isn't set up yet), which is
+// exactly what made the home screen's banner crash the app on cold boot,
+// since home is the very first screen shown and its onEnter fires
+// synchronously, well before a real gesture could ever reach firstGesture().
+let initPromise = null;
 
-/** Call once at boot, after the app's first real user gesture. */
-export async function initAds() {
+/** Call once at boot. */
+export function initAds() {
   const plugin = admob();
-  if (!plugin || initialized) return;
-  initialized = true;
-  try {
-    await plugin.initialize({
-      initializeForTesting: USING_TEST_ADS,
-      // This is a children's app: no behavioural ad targeting, ever. These
-      // three together are what Google's own Families Policy requires.
-      tagForChildDirectedTreatment: true,
-      tagForUnderAgeOfConsent: true,
-      maxAdContentRating: 'General',
-    });
-  } catch (err) {
-    console.warn('[ads] initialize failed', err);
+  if (!plugin) return Promise.resolve();
+  if (!initPromise) {
+    initPromise = plugin
+      .initialize({
+        initializeForTesting: USING_TEST_ADS,
+        // This is a children's app: no behavioural ad targeting, ever. These
+        // three together are what Google's own Families Policy requires.
+        tagForChildDirectedTreatment: true,
+        tagForUnderAgeOfConsent: true,
+        maxAdContentRating: 'General',
+      })
+      .catch((err) => console.warn('[ads] initialize failed', err))
+      .then(prepareInterstitial);
   }
-  prepareInterstitial();
+  return initPromise;
 }
 
 export async function showHomeBanner() {
   if (!adsAllowed()) return;
+  await initAds();
   try {
     await admob().showBanner({
       adId: BANNER_AD_ID,
@@ -77,6 +86,10 @@ export async function hideBanner() {
 let interstitialReady = false;
 
 async function prepareInterstitial() {
+  // Called only after initAds() has already resolved (from within its own
+  // .then, or from maybeShowInterstitial() below, well after boot) — must
+  // NOT await initAds() itself here, or it'd await its own still-pending
+  // promise and deadlock.
   if (!adsAllowed()) return;
   try {
     await admob().prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: USING_TEST_ADS, npa: true });
@@ -92,7 +105,9 @@ async function prepareInterstitial() {
  * the one call site in result.js.
  */
 export async function maybeShowInterstitial() {
-  if (!adsAllowed() || !interstitialReady) return;
+  if (!adsAllowed()) return;
+  await initAds();
+  if (!interstitialReady) return;
   interstitialReady = false;
   try {
     await admob().showInterstitial();

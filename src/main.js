@@ -28,9 +28,15 @@ defineRoute('profiles', profilesScreen);
 
 /* -------------------------------------------------------------------------- */
 
-// No gesture needed for this — just a purchase-history query — so it can run
-// as soon as the app boots, well before the home screen might show a banner.
+// Neither of these needs a gesture — a purchase-history query and AdMob's
+// own init — so both run as soon as the app boots, well before the home
+// screen's onEnter can show a banner. Showing a banner before initAds()
+// resolves crashes natively (its ad container view isn't set up yet), which
+// is exactly what made the app crash immediately on every cold boot: home
+// is the very first screen, and its onEnter fires synchronously, long
+// before any real tap could ever reach firstGesture() below.
 restorePurchases();
+initAds();
 
 // Browsers block audio until the first gesture; unlock on whichever comes first.
 // Voice needs the same treatment: several mobile browsers only let
@@ -44,7 +50,6 @@ const firstGesture = () => {
   unlockVoice();
   syncMusic();
   startPlayClock();
-  initAds();
   window.removeEventListener('pointerdown', firstGesture);
   window.removeEventListener('keydown', firstGesture);
 };
