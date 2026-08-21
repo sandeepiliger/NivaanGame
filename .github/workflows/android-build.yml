@@ -32,9 +32,6 @@ on:
       - '.github/workflows/android-build.yml'
   workflow_dispatch:
 
-env:
-  ANDROID_SDK_ROOT: /opt/android-sdk
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -61,19 +58,18 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
+      # ubuntu-latest ships an Android SDK already, with its own ANDROID_HOME
+      # pre-set on the runner — installing a second one and setting our own
+      # ANDROID_SDK_ROOT alongside it makes Gradle refuse to build ("Several
+      # environment variables ... contain different paths to the SDK").
+      # Just top up the one that's already there with whatever this app's
+      # compileSdk/build-tools version needs.
+      - name: Ensure required Android SDK components
         run: |
           set -e
-          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-          curl -sSL -o /tmp/cmdline-tools.zip \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
-          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;35.0.0"
 
       - name: Stage web assets
         run: npm run build:www
