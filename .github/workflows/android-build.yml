@@ -7,10 +7,12 @@ name: Android Build
 # so this workflow is the actual build verification for the native app.
 #
 # The Android SDK is set up with plain shell commands rather than a
-# marketplace action, to keep this runnable under a "GitHub actions only"
-# policy. If runs still fail instantly with zero jobs and no logs, check
-# Settings → Actions → General → Workflow permissions — it needs to be
-# "Read and write permissions" for new workflows to be allowed to start.
+# marketplace action, so this doesn't depend on any third-party action
+# being allowed. Presence checks for optional secrets are routed through
+# job-level env vars (see HAS_GOOGLE_SERVICES / HAS_SIGNING_KEY below)
+# rather than referenced directly in `if:` — GitHub Actions doesn't expose
+# the `secrets` context there, and doing so anyway fails the whole run
+# with zero jobs and no logs, which is a nasty one to debug blind.
 
 on:
   push:
@@ -36,6 +38,14 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # `if:` conditions can't reference `secrets` directly (GitHub Actions
+    # doesn't expose that context there — it only errors at run time, with
+    # zero jobs and no logs, which is exactly what made this hard to
+    # diagnose). Routing the presence checks through job-level env vars
+    # first works around it.
+    env:
+      HAS_GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+      HAS_SIGNING_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -78,7 +88,7 @@ jobs:
       # secret (see DEPLOYMENT.md) — analytics silently no-ops without it,
       # so the build succeeds either way.
       - name: Write Firebase config
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+        if: ${{ env.HAS_GOOGLE_SERVICES == 'true' }}
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
       - name: Debug build (always — proves the native wiring compiles)
@@ -94,17 +104,17 @@ jobs:
       # ANDROID_* secrets below (see DEPLOYMENT.md) — until then, the debug
       # APK above is the build verification, and there's nothing to sign yet.
       - name: Decode signing keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
 
       - name: Add release signing config
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         env:
           ANDROID_KEYSTORE_PATH: release.keystore
         run: node tools/android-signing.mjs
 
       - name: Release build (signed AAB, for Play Store upload)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         working-directory: android
         env:
           ANDROID_KEYSTORE_PATH: release.keystore
@@ -114,7 +124,7 @@ jobs:
         run: ./gradlew bundleRelease
 
       - uses: actions/upload-artifact@v4
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         with:
           name: nivaan-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
