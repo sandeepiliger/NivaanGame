@@ -150,11 +150,14 @@ function removeAdsCard() {
 export function parentsScreen() {
   const voiceListEl = h('div.parents__voicelist');
   renderVoiceList(voiceListEl);
+  // Voices can still be loading when this screen mounts; refresh once they
+  // arrive so the list isn't stuck showing nothing (or too few options).
+  // 'nativevoiceschanged' is audio.js's equivalent event for the packaged
+  // Android app's native TextToSpeech engine (see loadNativeVoices there).
   if (typeof speechSynthesis !== 'undefined') {
-    // Voices can still be loading when this screen mounts; refresh once they
-    // arrive so the list isn't stuck showing nothing (or too few options).
     speechSynthesis.addEventListener?.('voiceschanged', () => renderVoiceList(voiceListEl), { once: true });
   }
+  window.addEventListener('nativevoiceschanged', () => renderVoiceList(voiceListEl), { once: true });
 
   const el = h(
     'div.screen.parents',
@@ -185,6 +188,7 @@ export function parentsScreen() {
               alert(
                 [
                   `Browser: ${info.userAgent}`,
+                  `Native TTS (Android app): ${info.nativeTTS}`,
                   `speechSynthesis available: ${info.hasSpeechSynthesis}`,
                   `Voices installed: ${info.voiceCount}`,
                   ...info.voices,

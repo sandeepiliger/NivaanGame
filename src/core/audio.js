@@ -627,6 +627,46 @@ export function duckMusic(seconds = 1.6) {
 /* Voice                                                                       */
 /* -------------------------------------------------------------------------- */
 
+// Android's system WebView (what Capacitor ships the app in) does not
+// implement the Web Speech API's speechSynthesis the way a real mobile
+// browser does — window.speechSynthesis.getVoices() comes back empty and
+// speak() silently does nothing, which is why voice-over worked on the
+// GitHub Pages web build but was completely silent in the packaged app.
+// @capacitor-community/text-to-speech wraps Android's native TextToSpeech
+// engine instead, reached the same way as ads.js/analytics.js: through
+// Capacitor's global runtime bridge, not an npm import, so this still needs
+// no bundler and no-ops on the web build where window.Capacitor is undefined.
+function nativeTTS() {
+  return typeof window !== 'undefined' ? window.Capacitor?.Plugins?.TextToSpeech : null;
+}
+
+let nativeVoices = [];
+let nativeVoicesLoaded = false;
+
+async function loadNativeVoices() {
+  const plugin = nativeTTS();
+  if (!plugin) return;
+  try {
+    const { voices: list } = await plugin.getSupportedVoices();
+    nativeVoices = list || [];
+  } catch (err) {
+    console.warn('[audio] getSupportedVoices failed', err);
+  }
+  nativeVoicesLoaded = true;
+  refreshVoice();
+  // Mirrors the 'voiceschanged' event the Web Speech branch already fires,
+  // so the parent zone's voice list (which listens for either) refreshes
+  // once real voices are in, instead of showing "Auto" only forever.
+  window.dispatchEvent(new Event('nativevoiceschanged'));
+}
+
+// Fetching the voice list is also what actually starts up Android's TTS
+// engine — doing this at boot serves the same purpose unlockVoice() serves
+// for Web Speech (warming the engine up before the first real prompt), and
+// unlike Web Speech, the native engine has no gesture-unlock requirement so
+// this can run immediately rather than waiting for a tap.
+if (nativeTTS()) loadNativeVoices();
+
 let voice = null;
 let voicesReady = false;
 
@@ -675,8 +715,9 @@ function scoreVoice(v, lang, base) {
 }
 
 function pickVoice() {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-  const available = speechSynthesis.getVoices();
+  const hasWebSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  if (!nativeTTS() && !hasWebSpeech) return null;
+  const available = nativeTTS() ? nativeVoices : speechSynthesis.getVoices();
   if (!available.length) return null;
   voicesReady = true;
 
@@ -705,8 +746,9 @@ export function refreshVoice() {
  * device with no English ones at all.
  */
 export function listVoices() {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
-  const available = speechSynthesis.getVoices();
+  const hasWebSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  if (!nativeTTS() && !hasWebSpeech) return [];
+  const available = nativeTTS() ? nativeVoices : speechSynthesis.getVoices();
   if (!available.length) return [];
   const lang = (navigator.language || 'en-US').toLowerCase();
   const base = lang.split('-')[0];
@@ -755,8 +797,12 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
  */
 let voiceUnlocked = false;
 export function unlockVoice() {
-  if (voiceUnlocked || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  if (voiceUnlocked) return;
   voiceUnlocked = true;
+  // The native engine has no gesture-unlock requirement — loadNativeVoices()
+  // at boot already does the equivalent warm-up (see its comment above).
+  if (nativeTTS()) return;
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
     const warm = new SpeechSynthesisUtterance('Hi');
     warm.volume = 0.01;
@@ -812,13 +858,33 @@ function fireUtterance(text, { rate, pitch, useVoice, retryOnError }) {
 export function speak(text, { rate, pitch, force = false } = {}) {
   if (!text) return;
   if (!force && !settings().voice) return;
-  if (!('speechSynthesis' in window)) return;
+  const style = VOICE_STYLES[settings().voiceStyle] || VOICE_STYLES.energetic;
+  const effectiveRate = rate ?? style.rate;
+  const effectivePitch = pitch ?? style.pitch;
+
+  const plugin = nativeTTS();
+  if (plugin) {
+    if (!voicesReady) voice = pickVoice();
+    duckMusic(Math.min(6, 1 + String(text).length / 12));
+    const idx = voice ? nativeVoices.indexOf(voice) : -1;
+    plugin
+      .speak({
+        text: String(text),
+        lang: voice?.lang || 'en-US',
+        rate: effectiveRate,
+        pitch: effectivePitch,
+        volume: 1,
+        voice: idx >= 0 ? idx : undefined,
+        queueStrategy: 0, // Flush — cuts off anything still speaking, same as speechSynthesis.cancel() below
+      })
+      .catch((err) => console.warn('[audio] native speak failed', err));
+    return;
+  }
+
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
     speechSynthesis.cancel();
     if (!voicesReady) voice = pickVoice();
-    const style = VOICE_STYLES[settings().voiceStyle] || VOICE_STYLES.energetic;
-    const effectiveRate = rate ?? style.rate;
-    const effectivePitch = pitch ?? style.pitch;
     duckMusic(Math.min(6, 1 + String(text).length / 12));
     // Chrome can drop an utterance queued in the same tick as cancel() — a
     // beat later is enough for the cancel to actually flush first.
@@ -839,10 +905,29 @@ const PREVIEW_LINE = 'Woohoo! Let’s find the shapes together!';
  * auditioned before committing to it.
  */
 export function previewVoice(voiceURI, styleKey) {
+  const style = VOICE_STYLES[styleKey] || VOICE_STYLES.energetic;
+
+  const plugin = nativeTTS();
+  if (plugin) {
+    const previewed = voiceURI ? nativeVoices.find((v) => v.voiceURI === voiceURI) : voice;
+    const idx = previewed ? nativeVoices.indexOf(previewed) : -1;
+    plugin
+      .speak({
+        text: PREVIEW_LINE,
+        lang: previewed?.lang || 'en-US',
+        rate: style.rate,
+        pitch: style.pitch,
+        volume: 1,
+        voice: idx >= 0 ? idx : undefined,
+        queueStrategy: 0,
+      })
+      .catch((err) => console.warn('[audio] native preview failed', err));
+    return;
+  }
+
   if (!('speechSynthesis' in window)) return;
   const available = speechSynthesis.getVoices();
   const previewed = voiceURI ? available.find((v) => v.voiceURI === voiceURI) : voice;
-  const style = VOICE_STYLES[styleKey] || VOICE_STYLES.energetic;
   try {
     speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(PREVIEW_LINE);
@@ -873,10 +958,53 @@ export function previewVoice(voiceURI, styleKey) {
  * can be root-caused from a screenshot instead of guesswork.
  */
 export function diagnoseVoice() {
+  const plugin = nativeTTS();
+  if (plugin) {
+    return (async () => {
+      const info = {
+        userAgent: navigator.userAgent,
+        hasSpeechSynthesis: false,
+        nativeTTS: true,
+        voiceCount: nativeVoices.length,
+        voices: nativeVoices
+          .slice(0, 6)
+          .map((v) => `${v.name} (${v.lang}${v.localService ? '' : ', network'})`),
+        pickedVoice: 'none',
+        voiceSettingOn: settings().voice,
+        started: false,
+        ended: false,
+        error: null,
+        ms: 0,
+      };
+      if (!voicesReady) voice = pickVoice();
+      info.pickedVoice = voice ? `${voice.name} (${voice.lang}${voice.localService ? '' : ', network'})` : 'none';
+      const idx = voice ? nativeVoices.indexOf(voice) : -1;
+      const t0 = Date.now();
+      try {
+        await plugin.speak({
+          text: 'Testing. Can you hear my voice?',
+          lang: voice?.lang || 'en-US',
+          volume: 1,
+          rate: 0.92,
+          pitch: 1.15,
+          voice: idx >= 0 ? idx : undefined,
+          queueStrategy: 0,
+        });
+        info.started = true;
+        info.ended = true;
+      } catch (err) {
+        info.error = String(err?.message || err);
+      }
+      info.ms = Date.now() - t0;
+      return info;
+    })();
+  }
+
   return new Promise((resolve) => {
     const info = {
       userAgent: navigator.userAgent,
       hasSpeechSynthesis: 'speechSynthesis' in window,
+      nativeTTS: false,
       voiceCount: 0,
       voices: [],
       pickedVoice: 'none',
@@ -941,6 +1069,11 @@ export function diagnoseVoice() {
 }
 
 export function shutUp() {
+  const plugin = nativeTTS();
+  if (plugin) {
+    plugin.stop().catch(() => {});
+    return;
+  }
   try {
     speechSynthesis?.cancel();
   } catch {
