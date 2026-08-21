@@ -87,19 +87,9 @@ jobs:
         if: ${{ env.HAS_GOOGLE_SERVICES == 'true' }}
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
-      # Temporary diagnostic for a real-device launch crash: AdMob, Firebase
-      # Analytics, and Play Billing each pull in their own Google Play
-      # Services versions, and a mismatch between them (most commonly
-      # play-services-basement/-tasks) compiles fine but crashes the app at
-      # process start on a real device — this dumps the resolved versions so
-      # a conflict is visible directly instead of guessed at.
-      - name: Dump resolved dependency versions
-        working-directory: android
-        run: chmod +x gradlew && ./gradlew :app:dependencies --configuration debugRuntimeClasspath
-
       - name: Debug build (always — proves the native wiring compiles)
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: chmod +x gradlew && ./gradlew assembleDebug
 
       - uses: actions/upload-artifact@v4
         with:
