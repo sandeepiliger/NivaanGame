@@ -396,7 +396,7 @@ const sourceFiles = [];
     if (statSync(full).isDirectory()) walk(full);
     else if (full.endsWith('.js')) sourceFiles.push(full);
   }
-})(new URL('../src', import.meta.url).pathname);
+})(join(process.cwd(), 'src'));
 
 const usedSfx = new Set();
 for (const file of sourceFiles) {

@@ -105,7 +105,7 @@ function removeAdsCard() {
     return h(
       'section.card.parents__card',
       h('h2.parents__head', 'Ads'),
-      h('p.parents__note', '✅ Ads are removed on this device. Thank you for supporting Nivaan!'),
+      h('p.parents__note', '✅ Ads are removed on this device. Thank you for supporting BrainySparks!'),
     );
   }
 
@@ -122,7 +122,7 @@ function removeAdsCard() {
           infoDialog({
             emoji: '🎉',
             title: 'Ads removed!',
-            text: 'Thanks for supporting Nivaan Learning Games — enjoy the ad-free experience.',
+            text: 'Thanks for supporting BrainySparks — enjoy the ad-free experience.',
           });
           card.replaceWith(removeAdsCard());
         } else {
@@ -263,7 +263,7 @@ export function parentsScreen() {
         h('h2.parents__head', 'About'),
         h(
           'p.parents__note',
-          'Nivaan Learning Games is completely offline. No ads, no accounts, no data ever leaves this device.',
+          'BrainySparks is completely offline. No ads, no accounts, no data ever leaves this device.',
         ),
         h(
           'div.parents__row',

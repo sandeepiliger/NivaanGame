@@ -27,7 +27,7 @@ export function openCertificate(cert, kid) {
     h(
       'div.certsheet__foot',
       h('span', date),
-      h('span', 'Nivaan Learning Games'),
+      h('span', 'BrainySparks'),
     ),
   );
 
