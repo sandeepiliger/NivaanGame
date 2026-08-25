@@ -69,7 +69,7 @@ export function homeScreen() {
         mascot({ size: 128 }),
         h(
           'div.home__herotext',
-          h('h1.home__title', 'Nivaan Learning Games'),
+          h('h1.home__title', 'BrainySparks'),
           speechBubble(line),
         ),
       ),

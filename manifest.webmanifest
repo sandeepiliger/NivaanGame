@@ -1,6 +1,6 @@
 {
-  "name": "Nivaan Learning Games",
-  "short_name": "Nivaan",
+  "name": "BrainySparks",
+  "short_name": "BrainySparks",
   "description": "Fun educational games for kids ages 2-8: numbers, letters, colors, shapes and logic puzzles.",
   "start_url": "./index.html",
   "scope": "./",
