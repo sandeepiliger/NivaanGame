@@ -319,7 +319,7 @@ function checkPuzzle(puzzle, ctx) {
 
 const VARIANTS = Number(process.env.VARIANTS || 3);
 
-console.log('\nNivaan Learning Games — smoke tests\n');
+console.log('\nBrainySparks — smoke tests\n');
 
 let levelCount = 0;
 let puzzleCount = 0;

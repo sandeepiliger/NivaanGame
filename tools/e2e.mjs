@@ -109,7 +109,7 @@ async function expectComplete(label) {
 /* 1. Every screen renders                                                     */
 /* -------------------------------------------------------------------------- */
 
-console.log('\nNivaan Learning Games — e2e\n');
+console.log('\nBrainySparks — e2e\n');
 console.log('screens');
 
 await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });

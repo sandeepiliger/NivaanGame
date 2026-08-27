@@ -63,7 +63,7 @@ server.listen(PORT, () => {
   const lan = Object.values(networkInterfaces())
     .flat()
     .find((i) => i && i.family === 'IPv4' && !i.internal);
-  console.log(`\n  Nivaan Learning Games`);
+  console.log(`\n  BrainySparks`);
   console.log(`  ➜  Local:   http://localhost:${PORT}`);
   if (lan) console.log(`  ➜  Network: http://${lan.address}:${PORT}   (open this on your phone)`);
   console.log('');
