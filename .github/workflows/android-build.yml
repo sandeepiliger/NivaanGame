@@ -58,6 +58,12 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # Compiles the Java that android-patch.mjs generates against stubs, in
+      # about a second. The Gradle build below would catch the same errors,
+      # but ninety seconds later and after everything else has already run.
+      - name: Check generated Android Java compiles
+        run: node tools/check-android-java.mjs
+
       # ubuntu-latest ships an Android SDK already, with its own ANDROID_HOME
       # pre-set on the runner — installing a second one and setting our own
       # ANDROID_SDK_ROOT alongside it makes Gradle refuse to build ("Several
