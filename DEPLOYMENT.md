@@ -8,13 +8,28 @@ requires the actual developer identity, not an AI session's.
 ## Try it right now
 
 The [Android Build workflow](../../actions/workflows/android-build.yml)
-already builds a working, installable **debug APK** on every push to
-`main` — no account setup needed for this part. Open the latest successful
-run, scroll to **Artifacts**, download `nivaan-debug-apk`, and sideload it
-onto an Android phone (unzip it first, then open the `.apk`; you'll need to
-allow "install from this source" once). This is the real native app,
-running the real game — a good sanity check before doing any of the
-account setup below.
+builds installable APKs on every push to `main`, with no account setup
+needed. Open the latest successful run, scroll to **Artifacts**, and take
+your pick:
+
+| Artifact | What it is |
+|---|---|
+| `brainysparks-release-apk` | A real **release** build — this is the one to test with. |
+| `brainysparks-debug-apk` | Debug build. Shows a crash-details dialog on the launch after any crash, which the release build deliberately doesn't. |
+| `brainysparks-release-aab` | The Play Store upload. **Only produced once the four `ANDROID_*` secrets exist** (step 4). |
+
+Unzip the artifact, then open the `.apk` on an Android phone; you'll need
+to allow "install from this source" once.
+
+**About the release APK's signature.** Until you add a real upload key
+(step 4), the release APK is signed with a throwaway key that the CI job
+generates and destroys on every run. That is fine for installing and
+testing, but it is deliberately **not** usable for the Play Store: each
+build carries a different key, so Play would reject the second upload as a
+signature mismatch. The key is generated inside the job rather than stored
+in this repository because the repository is public, and a signing key in
+a public repo would let anyone sign an APK that Android accepts as an
+update to this app.
 
 ## 1. Google Play Console
 

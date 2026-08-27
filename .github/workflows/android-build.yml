@@ -106,23 +106,53 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: nivaan-debug-apk
+          name: brainysparks-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      # Only runs once you've created a signing keystore and added the four
-      # ANDROID_* secrets below (see DEPLOYMENT.md) — until then, the debug
-      # APK above is the build verification, and there's nothing to sign yet.
+      # --- Release build ----------------------------------------------------
+      #
+      # Two paths, chosen by whether the four ANDROID_* secrets exist.
+      #
+      # With them, this signs with the real upload key and produces both the
+      # AAB Play wants and a sideloadable APK.
+      #
+      # Without them, it still produces a genuine release APK — signed with a
+      # throwaway key generated inside this job and discarded when the runner
+      # is torn down. That APK is for installing and testing only: every build
+      # mints a different key, so Play would reject the second upload as a
+      # signature mismatch. The key is generated here rather than committed
+      # because this repository is public, and a signing key in a public repo
+      # would let anyone sign an APK that Android accepts as an update to
+      # this app.
       - name: Decode signing keystore
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
 
+      - name: Generate a throwaway signing key (no upload key configured)
+        if: ${{ env.HAS_SIGNING_KEY != 'true' }}
+        run: |
+          set -e
+          PASS="$(openssl rand -hex 24)"
+          echo "::add-mask::$PASS"
+          keytool -genkeypair -v \
+            -keystore android/app/release.keystore \
+            -alias ephemeral -keyalg RSA -keysize 2048 -validity 30 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=BrainySparks Test Build, O=32Labs, C=IN"
+          # Exported for the Gradle step below, which reads these at build
+          # time via System.getenv (see tools/android-signing.mjs).
+          {
+            echo "ANDROID_KEYSTORE_PASSWORD=$PASS"
+            echo "ANDROID_KEY_PASSWORD=$PASS"
+            echo "ANDROID_KEY_ALIAS=ephemeral"
+          } >> "$GITHUB_ENV"
+
       - name: Add release signing config
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         env:
           ANDROID_KEYSTORE_PATH: release.keystore
         run: node tools/android-signing.mjs
 
-      - name: Release build (signed AAB, for Play Store upload)
+      - name: Release build (your upload key — AAB for Play, plus an APK)
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         working-directory: android
         env:
@@ -130,10 +160,31 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease
+        run: ./gradlew bundleRelease assembleRelease
+
+      # ANDROID_KEYSTORE_PASSWORD / _KEY_ALIAS / _KEY_PASSWORD already come
+      # from the job environment, exported by the step that generated the key.
+      - name: Release build (throwaway key — install and test only)
+        if: ${{ env.HAS_SIGNING_KEY != 'true' }}
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+        run: ./gradlew assembleRelease
+
+      # Always produced, under whichever key applied above.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: brainysparks-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
 
       - uses: actions/upload-artifact@v4
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         with:
-          name: nivaan-release-aab
+          name: brainysparks-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+
+      # The keystore must never leave the runner — neither as an artifact nor
+      # in the workspace a later step might archive.
+      - name: Shred the throwaway keystore
+        if: ${{ always() && env.HAS_SIGNING_KEY != 'true' }}
+        run: shred -u android/app/release.keystore 2>/dev/null || rm -f android/app/release.keystore
