@@ -14,3 +14,8 @@ google-services.json
 *.keystore
 *.jks
 tools/shots/
+
+# Native launcher/splash source art, rendered from assets/icon.svg by
+# tools/make-app-assets.mjs (npm run android:assets). Generated, not source —
+# the mascot itself lives in that script.
+resources/

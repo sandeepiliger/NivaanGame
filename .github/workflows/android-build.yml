@@ -77,6 +77,13 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      # `cap add android` writes Capacitor's own stock logo into the launcher
+      # mipmaps and splash drawables. This regenerates both from the app's real
+      # mascot — it has to run on every build, since android/ is rebuilt from
+      # scratch each time and nothing in it is committed.
+      - name: Generate launcher icons and splash screens
+        run: npm run android:assets
+
       - name: Patch AdMob manifest entry
         run: node tools/android-patch.mjs
 

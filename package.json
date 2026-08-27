@@ -10,13 +10,15 @@
     "test": "node tools/smoke.mjs",
     "e2e": "node tools/e2e.mjs",
     "build:www": "node tools/build-www.mjs",
-    "android:sync": "npm run build:www && npx cap sync android && node tools/android-patch.mjs"
+    "android:assets": "node tools/make-app-assets.mjs && npx capacitor-assets generate --android --assetPath resources",
+    "android:sync": "npm run build:www && npx cap sync android && npm run android:assets && node tools/android-patch.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "license": "MIT",
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
     "playwright": "^1.62.1"
   },

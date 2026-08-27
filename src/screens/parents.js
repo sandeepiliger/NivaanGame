@@ -17,7 +17,6 @@ import {
   syncMusic,
   speak,
   sfx,
-  diagnoseVoice,
   listVoices,
   previewVoice,
   refreshVoice,
@@ -178,32 +177,6 @@ export function parentsScreen() {
           if (settings().voice) speak('Voice is on.', { force: true });
         }),
         toggleRow('Vibration', 'haptics'),
-        h(
-          'button.btn.btn--paper.btn--block',
-          {
-            type: 'button',
-            style: { marginTop: '10px' },
-            onclick: async () => {
-              const info = await diagnoseVoice();
-              alert(
-                [
-                  `Browser: ${info.userAgent}`,
-                  `Native TTS (Android app): ${info.nativeTTS}`,
-                  `speechSynthesis available: ${info.hasSpeechSynthesis}`,
-                  `Voices installed: ${info.voiceCount}`,
-                  ...info.voices,
-                  `Picked voice: ${info.pickedVoice}`,
-                  `"Spoken instructions" setting: ${info.voiceSettingOn}`,
-                  `Utterance started: ${info.started}`,
-                  `Utterance ended: ${info.ended}`,
-                  `Error: ${info.error || 'none'}`,
-                  `Took: ${info.ms}ms`,
-                ].join('\n'),
-              );
-            },
-          },
-          '🔎 Test voice (debug)',
-        ),
       ),
       h(
         'section.card.parents__card',

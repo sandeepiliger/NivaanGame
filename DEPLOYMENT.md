@@ -108,6 +108,32 @@ folder, after running `npm run android:sync` locally at least once).
    Billing directly (no third-party service or account needed for this one
    product) and the parent zone already has a working "Remove ads" button.
 
+## 5b. Privacy policy and store listing art
+
+**Privacy policy.** Play Console requires a publicly reachable privacy
+policy URL, and reviews it closely for a Families app. `privacy.html` at
+the repo root is served by the existing GitHub Pages workflow, so once
+pushed it is live at:
+
+```
+https://sandeepiliger.github.io/NivaanGame/privacy.html
+```
+
+Before you paste that into Play Console, open it and **replace the contact
+address placeholder** with a real support email you actually monitor — a
+parent must have somewhere to write. If you rename the app, update the
+name in that file too.
+
+**Icons and splash.** `npm run android:assets` renders the launcher icons
+and splash screens from the mascot in `tools/make-app-assets.mjs`, and CI
+runs it on every build, so the app no longer ships Capacitor's stock logo.
+The same command writes `resources/play-store-icon-512.png`, which is the
+512×512 icon the Play Store listing asks for.
+
+Still to produce by hand for the listing: a **1024×500 feature graphic**
+and **at least two phone screenshots**. Neither is needed for an internal
+testing release — only for production.
+
 ## 6. Target audience, content rating, and the Data Safety form
 
 This app is genuinely child-directed (ages 2–8, ABCs, counting, a cartoon

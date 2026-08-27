@@ -134,10 +134,15 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void showLastCrashIfAny() {
+        // Debug builds only. CrashApplication still records the trace in
+        // release, but showing a parent a raw Java stack trace would be worse
+        // than the crash itself — in release the saved trace is simply
+        // cleared on the next launch.
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         String trace = prefs.getString(KEY_TRACE, null);
         if (trace == null) return;
         prefs.edit().remove(KEY_TRACE).apply();
+        if (!BuildConfig.DEBUG) return;
 
         TextView text = new TextView(this);
         text.setText(trace);
