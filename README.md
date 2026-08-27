@@ -1,4 +1,4 @@
-# Nivaan Learning Games
+# BrainySparks
 
 A mobile-first educational game for children aged **2–8**, in the spirit of
 [LogicLike](https://play.google.com/store/apps/details?id=com.logicappkids): six

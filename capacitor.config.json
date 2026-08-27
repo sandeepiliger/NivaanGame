@@ -1,6 +1,6 @@
 {
   "appId": "com.labs32.nivaangame",
-  "appName": "Nivaan Learning Games",
+  "appName": "BrainySparks",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

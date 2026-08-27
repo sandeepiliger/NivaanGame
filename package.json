@@ -2,7 +2,7 @@
   "name": "nivaan-game",
   "version": "1.0.0",
   "private": true,
-  "description": "Nivaan Learning Games - a mobile-first educational game for kids ages 2-8 (numbers, letters, colors, shapes, logic).",
+  "description": "BrainySparks - a mobile-first educational game for kids ages 2-8 (numbers, letters, colors, shapes, logic).",
   "type": "module",
   "scripts": {
     "start": "node tools/serve.mjs",
