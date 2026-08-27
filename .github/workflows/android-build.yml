@@ -138,7 +138,7 @@ jobs:
             -keystore android/app/release.keystore \
             -alias ephemeral -keyalg RSA -keysize 2048 -validity 30 \
             -storepass "$PASS" -keypass "$PASS" \
-            -dname "CN=BrainySparks Test Build, O=32Labs, C=IN"
+            -dname "CN=BrainySparks Test Build, C=IN"
           # Exported for the Gradle step below, which reads these at build
           # time via System.getenv (see tools/android-signing.mjs).
           {
