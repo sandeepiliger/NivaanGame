@@ -74,3 +74,24 @@ mkdirSync(packageDir, { recursive: true });
 writeFileSync(join(packageDir, 'CrashApplication.java'), crashApplicationJava(appPackage));
 writeFileSync(join(packageDir, 'MainActivity.java'), mainActivityJava(appPackage));
 console.log('Wrote CrashApplication.java and MainActivity.java (crash-trace-on-next-launch handler)');
+
+// Android app version, driven from package.json's version — otherwise every
+// build carries Capacitor's stock "versionCode 1 / versionName 1.0" forever,
+// since android/ is regenerated from scratch each time and nothing else ever
+// touches these. Play Console rejects any upload whose versionCode isn't
+// strictly greater than the last one, so a fixed versionCode would mean the
+// very first update after a real Play upload fails outright.
+const gradlePath = join(root, 'android/app/build.gradle');
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const [major, minor, patch] = pkg.version.split('.').map(Number);
+// major.minor.patch -> a monotonically increasing integer as long as semver
+// itself only increases (safe as long as minor/patch each stay under 100,
+// true for any realistic release cadence).
+const versionCode = major * 10000 + minor * 100 + patch;
+
+let gradle = readFileSync(gradlePath, 'utf8');
+gradle = gradle
+  .replace(/versionCode \d+/, `versionCode ${versionCode}`)
+  .replace(/versionName "[^"]*"/, `versionName "${pkg.version}"`);
+writeFileSync(gradlePath, gradle);
+console.log(`Set Android version to ${pkg.version} (versionCode ${versionCode})`);
