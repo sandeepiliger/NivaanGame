@@ -1,13 +1,13 @@
 {
   "name": "nivaan-game",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "BrainySparks - a mobile-first educational game for kids ages 2-8 (numbers, letters, colors, shapes, logic).",
   "type": "module",
   "scripts": {
     "start": "node tools/serve.mjs",
     "dev": "node tools/serve.mjs",
-    "test": "node tools/smoke.mjs && node tools/check-android-java.mjs",
+    "test": "node tools/smoke.mjs && node tools/check-ads.mjs && node tools/check-android-java.mjs",
     "e2e": "node tools/e2e.mjs",
     "build:www": "node tools/build-www.mjs",
     "android:assets": "node tools/make-app-assets.mjs && npx capacitor-assets generate --android --assetPath resources",

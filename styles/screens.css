@@ -224,7 +224,10 @@
 .home__footer {
   display: flex;
   gap: 10px;
-  padding: 20px var(--pad) calc(28px + var(--sab));
+  /* The ad banner overlays the bottom of this screen, so the last thing in
+     the scroll has to clear it — otherwise these two links sit underneath
+     the ad and can't be tapped. --banner-h is 0 when there is no banner. */
+  padding: 20px var(--pad) calc(28px + var(--sab) + var(--banner-h));
 }
 
 .home__link {

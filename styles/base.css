@@ -102,6 +102,11 @@ svg {
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
 
+  /* Height of the native ad banner currently overlapping the bottom of the
+     screen, published by src/core/ads.js. Stays 0px on the web build, and
+     while the banner is hidden — see publishBannerHeight() there. */
+  --banner-h: 0px;
+
   --dur: 220ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);

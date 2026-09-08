@@ -6,6 +6,7 @@
 import { h } from '../core/dom.js';
 import { sfx, speak } from '../core/audio.js';
 import { resetPlayClock } from '../core/store.js';
+import { suspendBanner, restoreBanner } from '../core/ads.js';
 
 function openModal(content, { dismissable = true } = {}) {
   const box = h('div.modal__box', content);
@@ -20,11 +21,21 @@ function openModal(content, { dismissable = true } = {}) {
   );
   document.body.appendChild(modal);
   sfx('open');
+  // Every dialog in the app opens through here, so this is the one place that
+  // has to get the ad banner out of the way — it is a native view above the
+  // WebView and would paint over the dialog otherwise. See ads.js.
+  suspendBanner();
 
+  let closed = false;
   function close() {
+    // Idempotent: a second close() must not unbalance the suspend depth and
+    // bring the banner back while another dialog is still open.
+    if (closed) return;
+    closed = true;
     sfx('close');
     modal.remove();
     document.removeEventListener('keydown', onKey);
+    restoreBanner();
   }
   const onKey = (event) => {
     if (event.key === 'Escape' && dismissable) close();
